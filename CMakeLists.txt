@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.28.1)
 set(CMAKE_GENERATOR_PLATFORM x64)
 
 project(erdyes
-  VERSION   "1.1.6"
+  VERSION   "0.0.1"
   LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -35,6 +35,7 @@ add_library(mini INTERFACE)
 target_include_directories(mini INTERFACE ${mini_SOURCE_DIR}/src)
 
 add_library(erdyes SHARED
+  src/erdyes_apply_colors.cpp  
   src/erdyes_config.cpp
   src/erdyes_messages.cpp
   src/erdyes_talkscript.cpp

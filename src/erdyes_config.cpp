@@ -84,7 +84,8 @@ void erdyes::load_config(const std::filesystem::path &ini_path)
 
                 config::colors.emplace_back(name, format_message(L"MENU_Lockon_01a.png"),
                                             format_message(L"MENU_DummyTransparent.dds"),
-                                            elements[0], elements[1], elements[2]);
+                                            elements[0] / 255.0f, elements[1] / 255.0f,
+                                            elements[2] / 255.0f);
 
                 spdlog::info("Added color definition \"{} = {}\"", name, hex_code);
             }

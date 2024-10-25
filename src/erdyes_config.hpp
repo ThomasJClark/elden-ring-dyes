@@ -13,9 +13,9 @@ struct color
     std::string name;
     std::wstring selected_message;
     std::wstring deselected_message;
-    int red;
-    int green;
-    int blue;
+    float red;
+    float green;
+    float blue;
 };
 
 /**
