@@ -1,11 +1,10 @@
 #define MINI_CASE_SENSITIVE
 
 #include "erdyes_config.hpp"
+#include "erdyes_state.hpp"
 
 #include <mini/ini.h>
 #include <spdlog/spdlog.h>
-
-std::vector<erdyes::color> erdyes::config::colors;
 
 /**
  * Parse an HTML-style hexadecimal color code, returning true if successful
@@ -49,6 +48,18 @@ static bool parse_hex_code(const std::string &str, int elements[3])
     return true;
 }
 
+constexpr auto selected_img_src = L"MENU_Lockon_01a.png";
+constexpr auto deselected_img_src = L"MENU_DummyTransparent.dds";
+
+static constexpr std::wstring format_message(std::wstring const &hex_code, std::wstring const &name,
+                                             bool selected)
+{
+    auto img_src = selected ? selected_img_src : deselected_img_src;
+    return std::wstring{L"<IMG SRC='img://"} + img_src +
+           L"' WIDTH='20' HEIGHT='20' HSPACE='0' VSPACE='-1'>" +
+           L"<FONT FACE='Bingus Sans' COLOR='" + hex_code + L"'>" + L"*</FONT> " + name;
+};
+
 void erdyes::load_config(const std::filesystem::path &ini_path)
 {
     spdlog::info("Loading config from {}", ini_path.string());
@@ -66,7 +77,7 @@ void erdyes::load_config(const std::filesystem::path &ini_path)
     {
         auto colors_ini = ini["colors"];
 
-        config::colors.reserve(colors_ini.size());
+        erdyes::state::colors.reserve(colors_ini.size());
         for (auto &[name, hex_code] : ini["colors"])
         {
             int elements[3];
@@ -76,16 +87,10 @@ void erdyes::load_config(const std::filesystem::path &ini_path)
                 std::wstring name_l = {name.begin(), name.end()};
                 std::wstring hex_code_l = {hex_code.begin(), hex_code.end()};
 
-                auto format_message = [&name_l, &hex_code_l](std::wstring const &img_src) -> auto {
-                    return L"<IMG SRC='img://" + img_src + L"' WIDTH='20' HEIGHT='20' HSPACE='0' " +
-                           L"VSPACE='-1'><FONT FACE='Bingus Sans' COLOR='" + hex_code_l + L"'>" +
-                           L"*</FONT> " + name_l;
-                };
-
-                config::colors.emplace_back(name, format_message(L"MENU_Lockon_01a.png"),
-                                            format_message(L"MENU_DummyTransparent.dds"),
-                                            elements[0] / 255.0f, elements[1] / 255.0f,
-                                            elements[2] / 255.0f);
+                erdyes::state::colors.emplace_back(format_message(hex_code_l, name_l, true),
+                                                   format_message(hex_code_l, name_l, false),
+                                                   elements[0] / 255.0f, elements[1] / 255.0f,
+                                                   elements[2] / 255.0f);
 
                 spdlog::info("Added color definition \"{} = {}\"", name, hex_code);
             }
@@ -95,6 +100,18 @@ void erdyes::load_config(const std::filesystem::path &ini_path)
             }
         }
 
-        spdlog::info("Added {} colors", erdyes::config::colors.size());
+        spdlog::info("Added {} colors", erdyes::state::colors.size());
+
+        erdyes::state::intensities.emplace_back(format_message(L"#111111", L"Faint", true),
+                                                format_message(L"#111111", L"Faint", false), 0.25f);
+        erdyes::state::intensities.emplace_back(format_message(L"#444444", L"Low", true),
+                                                format_message(L"#444444", L"Low", false), 0.5f);
+        erdyes::state::intensities.emplace_back(format_message(L"#777777", L"Normal", true),
+                                                format_message(L"#777777", L"Normal", false), 1.0f);
+        erdyes::state::intensities.emplace_back(format_message(L"#bbbbbb", L"High", true),
+                                                format_message(L"#bbbbbb", L"High", false), 2.5f);
+        erdyes::state::intensities.emplace_back(format_message(L"#ffffff", L"Extreme", true),
+                                                format_message(L"#ffffff", L"Extreme", false),
+                                                10.0f);
     }
 }

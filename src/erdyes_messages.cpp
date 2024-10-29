@@ -5,7 +5,7 @@
  * function to return them.
  */
 #include "erdyes_messages.hpp"
-#include "erdyes_config.hpp"
+#include "erdyes_state.hpp"
 #include "from/messages.hpp"
 
 #include <chrono>
@@ -69,17 +69,17 @@ static const wchar_t *msg_repository_lookup_entry_detour(from::CS::MsgRepository
         }
         else if (msg_id >= erdyes::event_text_for_talk::dye_name_selected_start &&
                  msg_id < erdyes::event_text_for_talk::dye_name_selected_start +
-                              erdyes::config::colors.size())
+                              erdyes::state::colors.size())
         {
             auto color_index = msg_id - erdyes::event_text_for_talk::dye_name_selected_start;
-            return erdyes::config::colors[color_index].selected_message.data();
+            return erdyes::state::colors[color_index].selected_message.data();
         }
         else if (msg_id >= erdyes::event_text_for_talk::dye_name_deselected_start &&
                  msg_id < erdyes::event_text_for_talk::dye_name_deselected_start +
-                              erdyes::config::colors.size())
+                              erdyes::state::colors.size())
         {
             auto color_index = msg_id - erdyes::event_text_for_talk::dye_name_deselected_start;
-            return erdyes::config::colors[color_index].deselected_message.data();
+            return erdyes::state::colors[color_index].deselected_message.data();
         }
     }
 
