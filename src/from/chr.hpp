@@ -10,6 +10,8 @@ namespace CS
 
 class ChrIns;
 
+class SpecialEffect;
+
 class CSChrModelParamModifierModule
 {
     virtual ~CSChrModelParamModifierModule() = default;
@@ -74,7 +76,9 @@ class ChrIns
         CS::CSChrModelParamModifierModule *model_param_modifier_module;
     };
 
-    unsigned char unk0[0x188];
+    unsigned char unk8[0x170];
+    CS::SpecialEffect *special_effects;
+    unsigned char unk180[0x10];
     modules_type *modules;
 };
 
