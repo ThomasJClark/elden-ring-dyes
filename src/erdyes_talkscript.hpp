@@ -22,7 +22,7 @@ enum class dye_target_type
 /** Stores the current color option being edited */
 extern erdyes::talkscript::dye_target_type dye_target;
 
-/** Returns the color or intensity index currently focused in the open dialog, or -1 if none */
+/** Returns index of the currently selected menu option, or -1 if none */
 int get_focused_entry();
 
 }

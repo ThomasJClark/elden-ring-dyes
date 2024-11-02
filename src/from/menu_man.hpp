@@ -15,25 +15,26 @@ class GridControl
     unsigned char unk8[0xc8];
 
     /** The number of menu items added to the current dialog */
-    int entry_count;
+    int item_count;
 
     /** The currently selected menu item */
-    int focused_entry;
+    int current_item;
 };
 
-struct dialog
-{
-};
-
-/** State of the current AddTalkListData() dialog */
-class CSEventListDialog : public dialog
+class MenuWindow
 {
   public:
-    virtual ~CSEventListDialog() = default;
+    virtual ~MenuWindow() = default;
 
-    unsigned char unk8[0x48];
+    unsigned char unk8[0xa30];
+};
 
-    GridControl *grid_control;
+class GenericListSelectDialog : public CS::MenuWindow
+{
+  public:
+    virtual ~GenericListSelectDialog() = default;
+
+    CS::GridControl grid_control;
 };
 
 class CSPopupMenu
@@ -41,8 +42,8 @@ class CSPopupMenu
   public:
     virtual ~CSPopupMenu() = default;
 
-    CSMenuManImp *owner;
-    dialog *active_dialog;
+    CS::CSMenuManImp *owner;
+    CS::MenuWindow *window;
 };
 
 class CSMenuManImp
@@ -52,7 +53,7 @@ class CSMenuManImp
 
     unsigned char unk8[0x78];
 
-    CSPopupMenu *popup_menu;
+    CS::CSPopupMenu *popup_menu;
 };
 
 }

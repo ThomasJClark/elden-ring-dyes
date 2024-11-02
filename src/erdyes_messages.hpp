@@ -15,8 +15,6 @@ static constexpr int mod_message_start = 67000000;
 static constexpr int mod_message_end = 67100000;
 
 static constexpr int apply_dyes = 67000000;
-static constexpr int armor = 67000001;
-static constexpr int horse = 67000002;
 static constexpr int primary_color = 67000003;
 static constexpr int secondary_color = 67000004;
 static constexpr int tertiary_color = 67000005;

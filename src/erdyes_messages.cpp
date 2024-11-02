@@ -41,14 +41,6 @@ static const wchar_t *msg_repository_lookup_entry_detour(from::CS::MsgRepository
         {
             return L"Apply dyes"; // TODO: intl
         }
-        else if (msg_id == erdyes::event_text_for_talk::armor)
-        {
-            return L"Armor"; // TODO: intl
-        }
-        else if (msg_id == erdyes::event_text_for_talk::horse)
-        {
-            return L"Horse"; // TODO: intl
-        }
         else if (msg_id == erdyes::event_text_for_talk::primary_color)
         {
             return L"Primary color"; // TODO: intl
