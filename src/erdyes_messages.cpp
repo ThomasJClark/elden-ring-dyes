@@ -6,12 +6,12 @@
  */
 #include "erdyes_messages.hpp"
 #include "erdyes_state.hpp"
-#include "from/messages.hpp"
 
 #include <chrono>
 #include <map>
 #include <thread>
 
+#include <elden-x/messages.hpp>
 #include <elden-x/utils/localization.hpp>
 #include <elden-x/utils/modutils.hpp>
 #include <spdlog/spdlog.h>

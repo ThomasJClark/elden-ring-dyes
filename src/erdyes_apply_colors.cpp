@@ -1,10 +1,10 @@
 #include "erdyes_apply_colors.hpp"
 #include "erdyes_state.hpp"
 #include "erdyes_talkscript.hpp"
-#include "from/chr.hpp"
-#include "from/world_chr_man.hpp"
 
+#include <elden-x/chr.hpp>
 #include <elden-x/utils/modutils.hpp>
+#include <elden-x/world_chr_man.hpp>
 #include <spdlog/spdlog.h>
 #include <string>
 #include <thread>

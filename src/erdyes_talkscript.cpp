@@ -7,7 +7,6 @@
 #include "erdyes_talkscript.hpp"
 #include "erdyes_messages.hpp"
 #include "erdyes_state.hpp"
-#include "from/menu_man.hpp"
 
 #include <algorithm>
 #include <array>
@@ -15,6 +14,7 @@
 
 #include <elden-x/ezstate/ezstate.hpp>
 #include <elden-x/ezstate/talk_commands.hpp>
+#include <elden-x/menu_man.hpp>
 #include <elden-x/utils/modutils.hpp>
 
 erdyes::talkscript::dye_target_type erdyes::talkscript::dye_target =
