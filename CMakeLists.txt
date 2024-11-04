@@ -24,7 +24,8 @@ FetchContent_Declare(spdlog
   GIT_TAG               v1.13.0)
 
 FetchContent_Declare(elden-x
-  SOURCE_DIR            ../../elden-x)
+  GIT_REPOSITORY        https://github.com/ThomasJClark/elden-x.git
+  GIT_TAG               2f5148fd5f90f1e3c8e160b7a77871ab8d3a595d)
 
 # # Set iterator debug level to 0 for ELDEN RING ABI compatibility
 add_definitions(-D_ITERATOR_DEBUG_LEVEL=0)

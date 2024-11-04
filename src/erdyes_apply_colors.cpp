@@ -2,9 +2,8 @@
 #include "erdyes_state.hpp"
 #include "erdyes_talkscript.hpp"
 
-#include <elden-x/chr.hpp>
+#include <elden-x/chr/world_chr_man.hpp>
 #include <elden-x/utils/modutils.hpp>
-#include <elden-x/world_chr_man.hpp>
 #include <spdlog/spdlog.h>
 #include <string>
 #include <thread>

@@ -14,7 +14,8 @@
 
 #include <elden-x/ezstate/ezstate.hpp>
 #include <elden-x/ezstate/talk_commands.hpp>
-#include <elden-x/menu_man.hpp>
+#include <elden-x/menu/generic_list_select_dialog.hpp>
+#include <elden-x/menu/menu_man.hpp>
 #include <elden-x/utils/modutils.hpp>
 
 erdyes::talkscript::dye_target_type erdyes::talkscript::dye_target =
