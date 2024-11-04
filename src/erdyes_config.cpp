@@ -3,6 +3,8 @@
 #include "erdyes_config.hpp"
 #include "erdyes_state.hpp"
 
+#include <codecvt>
+#include <locale>
 #include <mini/ini.h>
 #include <spdlog/spdlog.h>
 
@@ -75,7 +77,9 @@ void erdyes::load_config(const std::filesystem::path &ini_path)
 
     if (ini.has("colors"))
     {
-        auto colors_ini = ini["colors"];
+        auto &colors_ini = ini["colors"];
+
+        auto converter = std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>>{};
 
         erdyes::state::colors.reserve(colors_ini.size());
         for (auto &[name, hex_code] : ini["colors"])
@@ -83,9 +87,8 @@ void erdyes::load_config(const std::filesystem::path &ini_path)
             int elements[3];
             if (parse_hex_code(hex_code, elements))
             {
-                // TODO decode UTF-8
-                std::wstring name_l = {name.begin(), name.end()};
-                std::wstring hex_code_l = {hex_code.begin(), hex_code.end()};
+                std::wstring name_l = converter.from_bytes(name);
+                std::wstring hex_code_l = converter.from_bytes(hex_code);
 
                 erdyes::state::colors.emplace_back(format_message(hex_code_l, name_l, true),
                                                    format_message(hex_code_l, name_l, false),
