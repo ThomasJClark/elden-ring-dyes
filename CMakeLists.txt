@@ -39,7 +39,6 @@ add_library(erdyes SHARED
   src/erdyes_apply_colors.cpp  
   src/erdyes_config.cpp
   src/erdyes_messages.cpp
-  src/erdyes_params.cpp
   src/erdyes_state.cpp
   src/erdyes_talkscript.cpp
   src/dllmain.cpp)

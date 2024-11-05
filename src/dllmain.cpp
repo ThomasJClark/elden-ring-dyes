@@ -13,7 +13,6 @@
 #include "erdyes_apply_colors.hpp"
 #include "erdyes_config.hpp"
 #include "erdyes_messages.hpp"
-#include "erdyes_params.hpp"
 #include "erdyes_talkscript.hpp"
 
 static std::thread mod_thread;
@@ -53,8 +52,6 @@ static void setup_mod()
 
     spdlog::info("Hooking talkscripts...");
     erdyes::setup_talkscript();
-
-    erdyes::setup_params();
 
     erdyes::apply_colors_init();
 
