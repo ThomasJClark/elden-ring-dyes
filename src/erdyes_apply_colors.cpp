@@ -155,6 +155,14 @@ void erdyes::apply_colors_init()
         .relative_offsets = {{1, 5}},
     });
 
-    // TODO aob
-    modutils::hook({.offset = 0x65a060}, chr_ins_update_detour, chr_ins_update);
+    modutils::hook(
+        {
+            .aob = "84 c0"                          // test al, al
+                   "74 09"                          // je 11
+                   "c6 87 ?? ?? ?? ?? 01"           // mov byte ptr [rdi + ????], 1
+                   "eb 0a"                          // jmp 21
+                   "c7 87 ?? ?? ?? ?? 00 00 00 00", // mov dword ptr [rdi + ????], 0
+            .offset = -203,
+        },
+        chr_ins_update_detour, chr_ins_update);
 }

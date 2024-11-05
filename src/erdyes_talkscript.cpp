@@ -489,7 +489,12 @@ void erdyes::setup_talkscript()
         },
         ezstate_enter_state_detour, ezstate_enter_state);
 
-    menu_man_addr = modutils::scan<from::CS::CSMenuManImp *>({.offset = 0x3d6b7b0}); // TODO
+    menu_man_addr = modutils::scan<from::CS::CSMenuManImp *>({
+        .aob = "48 8b 05 ?? ?? ?? ??" // mov rax, qword ptr [CSMenuMan]
+               "33 db"                // xor ebx, ebx
+               "48 89 74 ??",         // mov qword ptr [rsp + ??], rsi
+        .relative_offsets = {{3, 7}},
+    });
 }
 
 int erdyes::talkscript::get_focused_entry()
