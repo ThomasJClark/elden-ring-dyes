@@ -33,72 +33,108 @@ static bool is_valid_color_index(int index)
     return index >= 0 && index < erdyes::state::colors.size();
 }
 
+static bool is_valid_intensity_index(int index)
+{
+    return index >= 0 && index < erdyes::state::intensities.size();
+}
+
 /**
- * Applies SpEffects and updates material modifiers for the given character based on the selected
- * colors
+ * Upsert a single material parameter by name using one of the configured color options
+ */
+static void update_color(from::CS::ChrIns *chr, const std::wstring &name, erdyes::color &color,
+                         erdyes::intensity &intensity, float alpha = 1.0f)
+{
+    auto new_modifier = from::CS::CSChrModelParamModifierModule::modifier{
+        .name = name.data(),
+        .value = {.material_id = 1,
+                  .value1 = color.red,
+                  .value2 = color.green,
+                  .value3 = color.blue,
+                  .value4 = alpha,
+                  .value5 = intensity.intensity},
+    };
+
+    auto &modifiers = chr->modules->model_param_modifier_module->modifiers;
+
+    // Update the modifier if it's already applied to the character, otherwise insert it
+    // into the vector. Note that we write over the entire modifier and not just the RGB
+    // fields because the game zeros out this memory each frame.
+    for (auto &modifier : modifiers)
+    {
+        if (modifier.name == name)
+        {
+            modifier = new_modifier;
+            return;
+        }
+    }
+
+    modifiers.push_back(new_modifier);
+};
+
+/**
+ * Updates material parameters for the given character based on the selected colors
  */
 static void update_colors(from::CS::ChrIns *chr)
 {
     auto primary_color_index = erdyes::state::primary_color_index;
     auto secondary_color_index = erdyes::state::secondary_color_index;
     auto tertiary_color_index = erdyes::state::tertiary_color_index;
+    auto primary_intensity_index = erdyes::state::primary_intensity_index;
+    auto secondary_intensity_index = erdyes::state::secondary_intensity_index;
+    auto tertiary_intensity_index = erdyes::state::tertiary_intensity_index;
 
-    // Override the selected index with the focused dialog option, so you can hover over colors
-    // to preview them
+    // Override the selected index with the focused dialog option, so you can hover over menu
+    // options to preview them.
     auto focused_entry = erdyes::talkscript::get_focused_entry();
-    if (is_valid_color_index(focused_entry))
+    switch (erdyes::talkscript::dye_target)
     {
-        switch (erdyes::talkscript::dye_target)
-        {
-        case erdyes::talkscript::dye_target_type::primary_color:
-            primary_color_index = focused_entry;
-            break;
-        case erdyes::talkscript::dye_target_type::secondary_color:
-            secondary_color_index = focused_entry;
-            break;
-        case erdyes::talkscript::dye_target_type::tertiary_color:
-            tertiary_color_index = focused_entry;
-            break;
-        }
+    case erdyes::talkscript::dye_target_type::primary_color:
+        // The minus 1 accounts for the "none" option in the color menu
+        if (is_valid_color_index(focused_entry - 1))
+            primary_color_index = focused_entry - 1;
+        break;
+    case erdyes::talkscript::dye_target_type::secondary_color:
+        if (is_valid_color_index(focused_entry - 1))
+            secondary_color_index = focused_entry - 1;
+        break;
+    case erdyes::talkscript::dye_target_type::tertiary_color:
+        if (is_valid_color_index(focused_entry - 1))
+            tertiary_color_index = focused_entry - 1;
+        break;
+    case erdyes::talkscript::dye_target_type::primary_intensity:
+        if (is_valid_intensity_index(focused_entry))
+            primary_intensity_index = focused_entry;
+        break;
+    case erdyes::talkscript::dye_target_type::secondary_intensity:
+        if (is_valid_intensity_index(focused_entry))
+            secondary_intensity_index = focused_entry;
+        break;
+    case erdyes::talkscript::dye_target_type::tertiary_intensity:
+        if (is_valid_intensity_index(focused_entry))
+            tertiary_intensity_index = focused_entry;
+        break;
     }
-
-    auto set_color = [chr](const std::wstring &name, int color_index) {
-        if (is_valid_color_index(color_index))
-        {
-            auto &color = erdyes::state::colors[color_index];
-
-            auto new_modifier = from::CS::CSChrModelParamModifierModule::modifier{
-                .name = name.data(),
-                .value = {.material_id = 1,
-                          .value1 = color.red,
-                          .value2 = color.green,
-                          .value3 = color.blue,
-                          .value4 = 1.0f,
-                          .value5 = 1.0f},
-            };
-
-            auto &modifiers = chr->modules->model_param_modifier_module->modifiers;
-
-            // Update the modifier if it's already applied to the character, otherwise insert it
-            // into the vector. Note that we write over the entire modifier and not just the RGB
-            // fields because the game zeros out this memory each frame.
-            for (auto &modifier : modifiers)
-            {
-                if (modifier.name == name)
-                {
-                    modifier = new_modifier;
-                    return;
-                }
-            }
-            modifiers.push_back(new_modifier);
-        }
-    };
 
     // Update the player's material modifiers to have the RGB and intensity values of the chosen
     // colors
-    set_color(primary_color_material_ex_name, primary_color_index);
-    set_color(secondary_color_material_ex_name, secondary_color_index);
-    set_color(tertiary_color_material_ex_name, tertiary_color_index);
+    if (is_valid_color_index(primary_color_index))
+    {
+        update_color(chr, primary_color_material_ex_name,
+                     erdyes::state::colors[primary_color_index],
+                     erdyes::state::intensities[primary_intensity_index]);
+    }
+    if (is_valid_color_index(secondary_color_index))
+    {
+        update_color(chr, secondary_color_material_ex_name,
+                     erdyes::state::colors[secondary_color_index],
+                     erdyes::state::intensities[secondary_intensity_index]);
+    }
+    if (is_valid_color_index(tertiary_color_index))
+    {
+        update_color(chr, tertiary_color_material_ex_name,
+                     erdyes::state::colors[tertiary_color_index],
+                     erdyes::state::intensities[tertiary_intensity_index]);
+    }
 }
 
 void erdyes::apply_colors_init()

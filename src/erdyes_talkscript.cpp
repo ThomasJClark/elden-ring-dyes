@@ -94,7 +94,7 @@ static auto show_generic_dialog_shop_message_args = std::array{
  * Common ESD expressions passed as the arguments for the "Cancel" talk list data option in several
  * locations
  */
-static auto cancel_index = make_int_expression(9999);
+static auto cancel_index = make_int_expression(99999);
 static auto cancel_message = make_int_expression(erdyes::event_text_for_talk::cancel);
 static auto cancel_args = std::array{
     from::ezstate::expression(cancel_index),
@@ -138,7 +138,7 @@ static auto talk_menu_closed_expression =
  * Common ESD expressions passed as the arguments for the "Back" talk list data option in several
  * locations
  */
-static auto back_index = make_int_expression(9999);
+static auto back_index = make_int_expression(99999);
 static auto back_message = make_int_expression(erdyes::event_text_for_talk::back);
 static auto back_args = std::array{
     from::ezstate::expression(back_index),
@@ -151,34 +151,21 @@ static auto back_args = std::array{
  */
 class talkscript_menu_option
 {
-  private:
-    int index;
-    int message_id;
-    std::array<unsigned char, 6> index_expression;
-    std::array<unsigned char, 6> message_expression;
-    std::array<unsigned char, 9> condition_expression;
-
   public:
+    std::array<unsigned char, 6> index;
+    std::array<unsigned char, 6> message;
+    std::array<unsigned char, 9> condition;
     std::array<from::ezstate::expression, 3> args;
     from::ezstate::transition transition;
 
     talkscript_menu_option(int index, int message_id, from::ezstate::state *target_state)
-        : index(index), message_id(message_id), index_expression(make_int_expression(index)),
-          message_expression(make_int_expression(message_id)),
-          condition_expression(make_talk_list_result_expression(index)),
-          args{index_expression, message_expression, placeholder_expression},
-          transition(target_state, condition_expression)
+        : index(make_int_expression(index)), message(make_int_expression(message_id)),
+          condition(make_talk_list_result_expression(index)),
+          args{this->index, this->message, placeholder_expression},
+          transition(target_state, this->condition)
     {
-    }
-
-    void set_message_id(int new_message_id)
-    {
-        message_id = new_message_id;
-        message_expression = make_int_expression(message_id);
     }
 };
-
-static auto color_opts = std::vector<talkscript_menu_option>{};
 
 /**
  * Talkscript for selecting a color. This has a variable number of events, because colors can
@@ -200,10 +187,16 @@ static auto color_state =
  * Successor ESD states for each color option. These do nothing and immediately return to the color
  * selector state.
  */
-static auto color_selected_states = std::vector<from::ezstate::state>{};
 static auto color_selected_return_transition =
     from::ezstate::transition{nullptr, from::ezstate::expression{true_expression}};
 static auto color_selected_return_transitions = std::array{&color_selected_return_transition};
+static auto color_selected_states = std::vector<from::ezstate::state>{};
+static auto color_none_selected_state = from::ezstate::state{
+    .transitions = from::ezstate::transitions{color_selected_return_transitions}};
+
+static auto color_opts = std::vector<talkscript_menu_option>{};
+static auto color_none_opt = talkscript_menu_option{
+    99998, erdyes::event_text_for_talk::none_selected, &color_none_selected_state};
 
 /**
  * Talkscript for selecting the color type (primary, secondary, or tertiary) and what to change
@@ -278,12 +271,14 @@ static void initialize_talkscript_states()
     color_opts.reserve(colors.size());
 
     color_events.clear();
-    color_events.reserve(colors.size() + 4);
+    color_events.reserve(colors.size() + 5);
     color_events.emplace_back(from::talk_command::close_shop_message);
     color_events.emplace_back(from::talk_command::clear_talk_list_data);
+    color_events.emplace_back(from::talk_command::add_talk_list_data, color_none_opt.args);
 
     color_branch_transitions.clear();
-    color_branch_transitions.reserve(colors.size() + 1);
+    color_branch_transitions.reserve(colors.size() + 2);
+    color_branch_transitions.push_back(&color_none_opt.transition);
 
     color_selected_states.clear();
     color_selected_states.reserve(colors.size());
@@ -315,12 +310,15 @@ static void update_talkscript_states(int selected_index)
 {
     for (int i = 0; i < color_opts.size(); i++)
     {
-        auto message_id =
-            (i == selected_index ? erdyes::event_text_for_talk::dye_name_selected_start
-                                 : erdyes::event_text_for_talk::dye_name_deselected_start) +
-            i;
-        color_opts[i].set_message_id(message_id);
+        auto base_message_id = selected_index == i
+                                   ? erdyes::event_text_for_talk::dye_name_selected_start
+                                   : erdyes::event_text_for_talk::dye_name_deselected_start;
+        color_opts[i].message = make_int_expression(base_message_id + i);
     }
+
+    auto none_message_id = selected_index == -1 ? erdyes::event_text_for_talk::none_selected
+                                                : erdyes::event_text_for_talk::none_deselected;
+    color_none_opt.message = make_int_expression(none_message_id);
 }
 
 static auto patched_events = std::array<from::ezstate::event, 100>{};
@@ -404,6 +402,13 @@ static bool patch_states(from::ezstate::state_group *state_group)
     return true;
 }
 
+/**
+ * Triggers custom mod behavior when entering a patched talkscript state
+ */
+static void handle_state()
+{
+}
+
 static from::CS::CSMenuManImp **menu_man_addr;
 
 static void (*ezstate_enter_state)(from::ezstate::state *, from::ezstate::machine *, void *);
@@ -459,6 +464,22 @@ static void ezstate_enter_state_detour(from::ezstate::state *state, from::ezstat
                     break;
                 }
 
+                break;
+            }
+        }
+
+        if (state == &color_none_selected_state)
+        {
+            switch (erdyes::talkscript::dye_target)
+            {
+            case erdyes::talkscript::dye_target_type::primary_color:
+                erdyes::state::primary_color_index = -1;
+                break;
+            case erdyes::talkscript::dye_target_type::secondary_color:
+                erdyes::state::secondary_color_index = -1;
+                break;
+            case erdyes::talkscript::dye_target_type::tertiary_color:
+                erdyes::state::tertiary_color_index = -1;
                 break;
             }
         }

@@ -53,6 +53,20 @@ static const wchar_t *msg_repository_lookup_entry_detour(from::CS::MsgRepository
         {
             return L"Tertiary color"; // TODO: intl
         }
+        else if (msg_id == erdyes::event_text_for_talk::none_deselected)
+        {
+            return L"<IMG SRC='img://MENU_DummyTransparent.dds' WIDTH='32' HEIGHT='1' HSPACE='0' "
+                   L"VSPACE='-1'> "
+                   L"None"; // TODO: intl
+        }
+        else if (msg_id == erdyes::event_text_for_talk::none_selected)
+        {
+            return "<IMG SRC='img://MENU_Lockon_01a.png' WIDTH='20' HEIGHT='20' HSPACE='0' "
+                   "VSPACE='-1'>"
+                   L"<IMG SRC='img://MENU_DummyTransparent.dds' WIDTH='12' HEIGHT='1' HSPACE='0' "
+                   L"VSPACE='-1'> "
+                   L"None"; // TODO: intl
+        }
         else if (msg_id == erdyes::event_text_for_talk::back)
         {
             return L"<IMG SRC='img://MENU_DummyTransparent.dds' WIDTH='32' HEIGHT='1' HSPACE='0' "
