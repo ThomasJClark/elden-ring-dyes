@@ -1,4 +1,5 @@
 #include "erdyes_apply_colors.hpp"
+#include "erdyes_params.hpp"
 #include "erdyes_state.hpp"
 #include "erdyes_talkscript.hpp"
 
@@ -12,17 +13,17 @@ static void update_colors(from::CS::ChrIns *);
 
 static from::CS::WorldChrManImp **world_chr_man_addr;
 
-// int CS::ChrIns::ApplyEffect(unsigned int speffect_id, bool unk)
-typedef int apply_speffect_fn(from::CS::ChrIns *, unsigned int speffect_id, bool);
-static apply_speffect_fn *apply_speffect;
+// int CS::ChrIns::ApplyEffect(unsigned int sp_effect_id, bool unk)
+typedef int apply_sp_effect_fn(from::CS::ChrIns *, unsigned int sp_effect_id, bool);
+static apply_sp_effect_fn *apply_sp_effect;
 
-// int CS::ChrIns::ClearEffect(unsigned int speffect_id)
-typedef int clear_speffect_fn(from::CS::ChrIns *, unsigned int speffect_id);
-static clear_speffect_fn *clear_speffect;
+// int CS::ChrIns::ClearEffect(unsigned int sp_effect_id)
+typedef int clear_sp_effect_fn(from::CS::ChrIns *, unsigned int sp_effect_id);
+static clear_sp_effect_fn *clear_sp_effect;
 
-// bool CS::SpecialEffect::HasSpecialEffectId(unsigned int speffect_id)
-typedef bool has_speffect_fn(from::CS::SpecialEffect *, unsigned int speffect_id);
-static has_speffect_fn *has_speffect;
+// bool CS::SpecialEffect::HasSpecialEffectId(unsigned int sp_effect_id)
+typedef bool has_sp_effect_fn(from::CS::SpecialEffect *, unsigned int sp_effect_id);
+static has_sp_effect_fn *has_sp_effect;
 
 // CS::ChrIns::Update(float delta_time)
 static void (*chr_ins_update)(from::CS::ChrIns *, float);
@@ -71,14 +72,14 @@ static void update_colors(from::CS::ChrIns *chr)
         }
     }
 
-    auto set_speffect = [chr](unsigned int speffect_id, bool should_have_effect) {
-        if (has_speffect(chr->special_effects, speffect_id) != should_have_effect)
+    auto set_sp_effect = [chr](unsigned int sp_effect_id, bool should_have_effect) {
+        if (has_sp_effect(chr->special_effects, sp_effect_id) != should_have_effect)
         {
-            spdlog::info("speffect {} -> {}", speffect_id, should_have_effect ? "on" : "off");
+            spdlog::info("speffect {} -> {}", sp_effect_id, should_have_effect ? "on" : "off");
             if (should_have_effect)
-                apply_speffect(chr, speffect_id, false);
+                apply_sp_effect(chr, sp_effect_id, false);
             else
-                clear_speffect(chr, speffect_id);
+                clear_sp_effect(chr, sp_effect_id);
         }
     };
 
@@ -103,9 +104,10 @@ static void update_colors(from::CS::ChrIns *chr)
     };
 
     // Ensure the player has or doesn't have the correct SpEffects for any chosen colors
-    set_speffect(erdyes::primary_color_speffect_id, is_valid_color_index(primary_color_index));
-    set_speffect(erdyes::secondary_color_speffect_id, is_valid_color_index(secondary_color_index));
-    set_speffect(erdyes::tertiary_color_speffect_id, is_valid_color_index(tertiary_color_index));
+    set_sp_effect(erdyes::primary_color_sp_effect_id, is_valid_color_index(primary_color_index));
+    set_sp_effect(erdyes::secondary_color_sp_effect_id,
+                  is_valid_color_index(secondary_color_index));
+    set_sp_effect(erdyes::tertiary_color_sp_effect_id, is_valid_color_index(tertiary_color_index));
 
     // Update the player's material modifiers to have the RGB and intensity values of the chosen
     // colors
@@ -138,17 +140,17 @@ void erdyes::apply_colors_init()
                "e8 ?? ?? ?? ??", // call ChrIns::ClearSpEffect
     });
 
-    apply_speffect = modutils::scan<apply_speffect_fn>({
+    apply_sp_effect = modutils::scan<apply_sp_effect_fn>({
         .address = disable_enable_grace_warp_address + 11,
         .relative_offsets = {{1, 5}},
     });
 
-    has_speffect = modutils::scan<has_speffect_fn>({
+    has_sp_effect = modutils::scan<has_sp_effect_fn>({
         .address = disable_enable_grace_warp_address + 18,
         .relative_offsets = {{1, 5}},
     });
 
-    clear_speffect = modutils::scan<clear_speffect_fn>({
+    clear_sp_effect = modutils::scan<clear_sp_effect_fn>({
         .address = disable_enable_grace_warp_address + 35,
         .relative_offsets = {{1, 5}},
     });
