@@ -10,7 +10,7 @@
 #include <elden-x/params/params.hpp>
 #include <elden-x/utils/modutils.hpp>
 
-#include "erdyes_apply_colors.hpp"
+#include "erdyes_colors.hpp"
 #include "erdyes_config.hpp"
 #include "erdyes_messages.hpp"
 #include "erdyes_talkscript.hpp"

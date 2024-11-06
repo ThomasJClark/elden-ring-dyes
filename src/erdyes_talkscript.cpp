@@ -5,8 +5,8 @@
  * include more options for modded shops.
  */
 #include "erdyes_talkscript.hpp"
+#include "erdyes_colors.hpp"
 #include "erdyes_messages.hpp"
-#include "erdyes_state.hpp"
 
 #include <algorithm>
 #include <array>
@@ -265,7 +265,7 @@ static auto apply_dyes_transition = from::ezstate::transition{
 
 static void initialize_talkscript_states()
 {
-    auto &colors = erdyes::state::colors;
+    auto &colors = erdyes::colors;
 
     color_opts.clear();
     color_opts.reserve(colors.size());
@@ -432,17 +432,17 @@ static void ezstate_enter_state_detour(from::ezstate::state *state, from::ezstat
     if (state == &primary_state)
     {
         erdyes::talkscript::dye_target = erdyes::talkscript::dye_target_type::primary_color;
-        update_talkscript_states(erdyes::state::primary_color_index);
+        update_talkscript_states(erdyes::primary_color_index);
     }
     else if (state == &secondary_state)
     {
         erdyes::talkscript::dye_target = erdyes::talkscript::dye_target_type::secondary_color;
-        update_talkscript_states(erdyes::state::secondary_color_index);
+        update_talkscript_states(erdyes::secondary_color_index);
     }
     else if (state == &tertiary_state)
     {
         erdyes::talkscript::dye_target = erdyes::talkscript::dye_target_type::tertiary_color;
-        update_talkscript_states(erdyes::state::tertiary_color_index);
+        update_talkscript_states(erdyes::tertiary_color_index);
     }
     else
     {
@@ -454,13 +454,13 @@ static void ezstate_enter_state_detour(from::ezstate::state *state, from::ezstat
                 switch (erdyes::talkscript::dye_target)
                 {
                 case erdyes::talkscript::dye_target_type::primary_color:
-                    erdyes::state::primary_color_index = i;
+                    erdyes::primary_color_index = i;
                     break;
                 case erdyes::talkscript::dye_target_type::secondary_color:
-                    erdyes::state::secondary_color_index = i;
+                    erdyes::secondary_color_index = i;
                     break;
                 case erdyes::talkscript::dye_target_type::tertiary_color:
-                    erdyes::state::tertiary_color_index = i;
+                    erdyes::tertiary_color_index = i;
                     break;
                 }
 
@@ -473,13 +473,13 @@ static void ezstate_enter_state_detour(from::ezstate::state *state, from::ezstat
             switch (erdyes::talkscript::dye_target)
             {
             case erdyes::talkscript::dye_target_type::primary_color:
-                erdyes::state::primary_color_index = -1;
+                erdyes::primary_color_index = -1;
                 break;
             case erdyes::talkscript::dye_target_type::secondary_color:
-                erdyes::state::secondary_color_index = -1;
+                erdyes::secondary_color_index = -1;
                 break;
             case erdyes::talkscript::dye_target_type::tertiary_color:
-                erdyes::state::tertiary_color_index = -1;
+                erdyes::tertiary_color_index = -1;
                 break;
             }
         }

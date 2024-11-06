@@ -36,10 +36,9 @@ add_library(mini INTERFACE)
 target_include_directories(mini INTERFACE ${mini_SOURCE_DIR}/src)
 
 add_library(erdyes SHARED
-  src/erdyes_apply_colors.cpp  
+  src/erdyes_colors.cpp  
   src/erdyes_config.cpp
   src/erdyes_messages.cpp
-  src/erdyes_state.cpp
   src/erdyes_talkscript.cpp
   src/dllmain.cpp)
 

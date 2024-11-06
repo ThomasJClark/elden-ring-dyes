@@ -1,6 +1,5 @@
 #pragma once
 
-#include <array>
 #include <string>
 #include <vector>
 
@@ -23,9 +22,6 @@ struct intensity
     float intensity;
 };
 
-namespace state
-{
-
 extern std::vector<color> colors;
 extern std::vector<intensity> intensities;
 
@@ -42,5 +38,6 @@ extern int primary_intensity_index;
 extern int secondary_intensity_index;
 extern int tertiary_intensity_index;
 
-};
-};
+void apply_colors_init();
+
+}

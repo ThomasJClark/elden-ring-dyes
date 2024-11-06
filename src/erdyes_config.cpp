@@ -1,7 +1,7 @@
 #define MINI_CASE_SENSITIVE
 
 #include "erdyes_config.hpp"
-#include "erdyes_state.hpp"
+#include "erdyes_colors.hpp"
 
 #include <codecvt>
 #include <locale>
@@ -81,7 +81,7 @@ void erdyes::load_config(const std::filesystem::path &ini_path)
 
         auto converter = std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>>{};
 
-        erdyes::state::colors.reserve(colors_ini.size());
+        erdyes::colors.reserve(colors_ini.size());
         for (auto &[name, hex_code] : ini["colors"])
         {
             int elements[3];
@@ -90,10 +90,10 @@ void erdyes::load_config(const std::filesystem::path &ini_path)
                 std::wstring name_l = converter.from_bytes(name);
                 std::wstring hex_code_l = converter.from_bytes(hex_code);
 
-                erdyes::state::colors.emplace_back(format_message(hex_code_l, name_l, true),
-                                                   format_message(hex_code_l, name_l, false),
-                                                   elements[0] / 255.0f, elements[1] / 255.0f,
-                                                   elements[2] / 255.0f);
+                erdyes::colors.emplace_back(format_message(hex_code_l, name_l, true),
+                                            format_message(hex_code_l, name_l, false),
+                                            elements[0] / 255.0f, elements[1] / 255.0f,
+                                            elements[2] / 255.0f);
 
                 spdlog::info("Added color definition \"{} = {}\"", name, hex_code);
             }
@@ -103,18 +103,17 @@ void erdyes::load_config(const std::filesystem::path &ini_path)
             }
         }
 
-        spdlog::info("Added {} colors", erdyes::state::colors.size());
+        spdlog::info("Added {} colors", erdyes::colors.size());
 
-        erdyes::state::intensities.emplace_back(format_message(L"#111111", L"Faint", true),
-                                                format_message(L"#111111", L"Faint", false), 0.25f);
-        erdyes::state::intensities.emplace_back(format_message(L"#444444", L"Low", true),
-                                                format_message(L"#444444", L"Low", false), 0.5f);
-        erdyes::state::intensities.emplace_back(format_message(L"#777777", L"Normal", true),
-                                                format_message(L"#777777", L"Normal", false), 1.0f);
-        erdyes::state::intensities.emplace_back(format_message(L"#bbbbbb", L"High", true),
-                                                format_message(L"#bbbbbb", L"High", false), 2.5f);
-        erdyes::state::intensities.emplace_back(format_message(L"#ffffff", L"Extreme", true),
-                                                format_message(L"#ffffff", L"Extreme", false),
-                                                10.0f);
+        erdyes::intensities.emplace_back(format_message(L"#111111", L"Faint", true),
+                                         format_message(L"#111111", L"Faint", false), 0.25f);
+        erdyes::intensities.emplace_back(format_message(L"#444444", L"Low", true),
+                                         format_message(L"#444444", L"Low", false), 0.5f);
+        erdyes::intensities.emplace_back(format_message(L"#777777", L"Normal", true),
+                                         format_message(L"#777777", L"Normal", false), 1.0f);
+        erdyes::intensities.emplace_back(format_message(L"#bbbbbb", L"High", true),
+                                         format_message(L"#bbbbbb", L"High", false), 2.5f);
+        erdyes::intensities.emplace_back(format_message(L"#ffffff", L"Extreme", true),
+                                         format_message(L"#ffffff", L"Extreme", false), 10.0f);
     }
 }

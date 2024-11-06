@@ -5,7 +5,7 @@
  * function to return them.
  */
 #include "erdyes_messages.hpp"
-#include "erdyes_state.hpp"
+#include "erdyes_colors.hpp"
 
 #include <chrono>
 #include <map>
@@ -74,18 +74,18 @@ static const wchar_t *msg_repository_lookup_entry_detour(from::CS::MsgRepository
                    L"Back"; // TODO: intl
         }
         else if (msg_id >= erdyes::event_text_for_talk::dye_name_selected_start &&
-                 msg_id < erdyes::event_text_for_talk::dye_name_selected_start +
-                              erdyes::state::colors.size())
+                 msg_id <
+                     erdyes::event_text_for_talk::dye_name_selected_start + erdyes::colors.size())
         {
             auto color_index = msg_id - erdyes::event_text_for_talk::dye_name_selected_start;
-            return erdyes::state::colors[color_index].selected_message.data();
+            return erdyes::colors[color_index].selected_message.data();
         }
         else if (msg_id >= erdyes::event_text_for_talk::dye_name_deselected_start &&
-                 msg_id < erdyes::event_text_for_talk::dye_name_deselected_start +
-                              erdyes::state::colors.size())
+                 msg_id <
+                     erdyes::event_text_for_talk::dye_name_deselected_start + erdyes::colors.size())
         {
             auto color_index = msg_id - erdyes::event_text_for_talk::dye_name_deselected_start;
-            return erdyes::state::colors[color_index].deselected_message.data();
+            return erdyes::colors[color_index].deselected_message.data();
         }
     }
 
