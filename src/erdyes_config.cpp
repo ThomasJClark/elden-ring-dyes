@@ -105,15 +105,25 @@ void erdyes::load_config(const std::filesystem::path &ini_path)
 
         spdlog::info("Added {} colors", erdyes::colors.size());
 
-        erdyes::intensities.emplace_back(format_message(L"#111111", L"Faint", true),
-                                         format_message(L"#111111", L"Faint", false), 0.25f);
-        erdyes::intensities.emplace_back(format_message(L"#444444", L"Low", true),
-                                         format_message(L"#444444", L"Low", false), 0.5f);
-        erdyes::intensities.emplace_back(format_message(L"#777777", L"Normal", true),
-                                         format_message(L"#777777", L"Normal", false), 1.0f);
-        erdyes::intensities.emplace_back(format_message(L"#bbbbbb", L"High", true),
-                                         format_message(L"#bbbbbb", L"High", false), 2.5f);
-        erdyes::intensities.emplace_back(format_message(L"#ffffff", L"Extreme", true),
-                                         format_message(L"#ffffff", L"Extreme", false), 10.0f);
+        erdyes::intensities.emplace_back(format_message(L"#1e1e1e", L"1", true),
+                                         format_message(L"#1e1e1e", L"1", false), 0.125f);
+        erdyes::intensities.emplace_back(format_message(L"#3d3d3d", L"2", true),
+                                         format_message(L"#3d3d3d", L"2", false), 0.25f);
+        erdyes::intensities.emplace_back(format_message(L"#4d4d4d", L"3", true),
+                                         format_message(L"#4d4d4d", L"3", false), 0.5f);
+        erdyes::intensities.emplace_back(format_message(L"#656565", L"4", true),
+                                         format_message(L"#656565", L"4", false), 1.0f);
+        erdyes::intensities.emplace_back(format_message(L"#7f7f7f", L"5", true),
+                                         format_message(L"#7f7f7f", L"5", false), 2.0f);
+        erdyes::intensities.emplace_back(format_message(L"#9a9a9a", L"6", true),
+                                         format_message(L"#9a9a9a", L"6", false), 4.0f);
+        erdyes::intensities.emplace_back(format_message(L"#b2b2b2", L"7", true),
+                                         format_message(L"#b2b2b2", L"7", false), 8.0f);
+        erdyes::intensities.emplace_back(format_message(L"#c9c9c9", L"8", true),
+                                         format_message(L"#c9c9c9", L"8", false), 16.0f);
+        erdyes::intensities.emplace_back(format_message(L"#e1e1e1", L"9", true),
+                                         format_message(L"#e1e1e1", L"9", false), 32.0f);
+        erdyes::intensities.emplace_back(format_message(L"#ffffff", L"10", true),
+                                         format_message(L"#ffffff", L"10", false), 64.0f);
     }
 }
