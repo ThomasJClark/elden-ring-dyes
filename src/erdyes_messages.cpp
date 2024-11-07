@@ -53,6 +53,18 @@ static const wchar_t *msg_repository_lookup_entry_detour(from::CS::MsgRepository
         {
             return L"Tertiary color"; // TODO: intl
         }
+        else if (msg_id == erdyes::event_text_for_talk::primary_intensity)
+        {
+            return L"Primary intensity"; // TODO: intl
+        }
+        else if (msg_id == erdyes::event_text_for_talk::secondary_intensity)
+        {
+            return L"Secondary intensity"; // TODO: intl
+        }
+        else if (msg_id == erdyes::event_text_for_talk::tertiary_intensity)
+        {
+            return L"Tertiary intensity"; // TODO: intl
+        }
         else if (msg_id == erdyes::event_text_for_talk::none_deselected)
         {
             return L"<IMG SRC='img://MENU_DummyTransparent.dds' WIDTH='32' HEIGHT='1' HSPACE='0' "
@@ -73,19 +85,35 @@ static const wchar_t *msg_repository_lookup_entry_detour(from::CS::MsgRepository
                    L"VSPACE='-1'> "
                    L"Back"; // TODO: intl
         }
-        else if (msg_id >= erdyes::event_text_for_talk::dye_name_selected_start &&
+        else if (msg_id >= erdyes::event_text_for_talk::dye_color_selected_start &&
                  msg_id <
-                     erdyes::event_text_for_talk::dye_name_selected_start + erdyes::colors.size())
+                     erdyes::event_text_for_talk::dye_color_selected_start + erdyes::colors.size())
         {
-            auto color_index = msg_id - erdyes::event_text_for_talk::dye_name_selected_start;
+            auto color_index = msg_id - erdyes::event_text_for_talk::dye_color_selected_start;
             return erdyes::colors[color_index].selected_message.data();
         }
-        else if (msg_id >= erdyes::event_text_for_talk::dye_name_deselected_start &&
-                 msg_id <
-                     erdyes::event_text_for_talk::dye_name_deselected_start + erdyes::colors.size())
+        else if (msg_id >= erdyes::event_text_for_talk::dye_color_deselected_start &&
+                 msg_id < erdyes::event_text_for_talk::dye_color_deselected_start +
+                              erdyes::colors.size())
         {
-            auto color_index = msg_id - erdyes::event_text_for_talk::dye_name_deselected_start;
+            auto color_index = msg_id - erdyes::event_text_for_talk::dye_color_deselected_start;
             return erdyes::colors[color_index].deselected_message.data();
+        }
+        else if (msg_id >= erdyes::event_text_for_talk::dye_intensity_selected_start &&
+                 msg_id < erdyes::event_text_for_talk::dye_intensity_selected_start +
+                              erdyes::intensities.size())
+        {
+            auto intensity_index =
+                msg_id - erdyes::event_text_for_talk::dye_intensity_selected_start;
+            return erdyes::intensities[intensity_index].selected_message.data();
+        }
+        else if (msg_id >= erdyes::event_text_for_talk::dye_intensity_deselected_start &&
+                 msg_id < erdyes::event_text_for_talk::dye_intensity_deselected_start +
+                              erdyes::intensities.size())
+        {
+            auto intensity_index =
+                msg_id - erdyes::event_text_for_talk::dye_intensity_deselected_start;
+            return erdyes::intensities[intensity_index].deselected_message.data();
         }
     }
 

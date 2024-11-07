@@ -13,9 +13,9 @@ std::vector<erdyes::intensity> erdyes::intensities;
 int erdyes::primary_color_index = -1;
 int erdyes::secondary_color_index = -1;
 int erdyes::tertiary_color_index = -1;
-int erdyes::primary_intensity_index = 2;
-int erdyes::secondary_intensity_index = 2;
-int erdyes::tertiary_intensity_index = 2;
+int erdyes::primary_intensity_index = 3;
+int erdyes::secondary_intensity_index = 3;
+int erdyes::tertiary_intensity_index = 3;
 
 static const std::wstring primary_color_material_ex_name = L"[Albedo]_1_[Tint]";
 static const std::wstring secondary_color_material_ex_name = L"[Albedo]_3_[Tint]";
