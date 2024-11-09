@@ -9,10 +9,11 @@
 #include "erdyes_talkscript.hpp"
 #include "erdyes_colors.hpp"
 #include "erdyes_messages.hpp"
+#include "talkscript_utils.hpp"
 
-#include <algorithm>
 #include <array>
 #include <spdlog/spdlog.h>
+#include <vector>
 
 #include <elden-x/ezstate/ezstate.hpp>
 #include <elden-x/ezstate/talk_commands.hpp>
@@ -23,224 +24,33 @@
 erdyes::talkscript::dye_target_type erdyes::talkscript::dye_target =
     erdyes::talkscript::dye_target_type::none;
 
-typedef std::array<unsigned char, 6> int_expression;
-
-/**
- * Create an ESD expression representing a 4 byte integer
- */
-static constexpr int_expression make_int_expression(int value)
-{
-    return {
-        0x82,
-        static_cast<unsigned char>((value & 0x000000ff)),
-        static_cast<unsigned char>((value & 0x0000ff00) >> 8),
-        static_cast<unsigned char>((value & 0x00ff0000) >> 16),
-        static_cast<unsigned char>((value & 0xff000000) >> 24),
-        0xa1,
-    };
-}
-
-/**
- * Parse an ESD expression containing only a 1 or 4 byte integer
- */
-static int get_ezstate_int_value(from::ezstate::expression &arg)
-{
-    // Single byte (plus final 0xa1) - used to store integers from -64 to 63
-    if (arg.size() == 2)
-    {
-        return arg[0] - 64;
-    }
-
-    // Five bytes (plus final 0xa1) - used to store larger integers
-    if (arg.size() == 6 && arg[0] == 0x82)
-    {
-        return *reinterpret_cast<int *>(&arg[1]);
-    }
-
-    return -1;
-}
-
-/**
- * Create an ESD expression that checks for GetTalkListEntryResult() returning a given value
- */
-static constexpr std::array<unsigned char, 9> make_talk_list_result_expression(int value)
-{
-    return {
-        0x57,
-        0x84,
-        0x82,
-        static_cast<unsigned char>((value & 0x000000ff)),
-        static_cast<unsigned char>((value & 0x0000ff00) >> 8),
-        static_cast<unsigned char>((value & 0x00ff0000) >> 16),
-        static_cast<unsigned char>((value & 0xff000000) >> 24),
-        0x95,
-        0xa1,
-    };
-}
-
-/**
- * Common ESD expression (almost) always used as the third argument of AddTalkListData()
- */
-static auto placeholder_expression = make_int_expression(-1);
-
-/**
- * Common ESD expression passed as the argument to ShowGenericDialogShopMessage() for all purposes
- * in this mod
- */
-static auto generic_dialog_shop_message = make_int_expression(0);
-static auto show_generic_dialog_shop_message_args = std::array{
-    from::ezstate::expression(generic_dialog_shop_message),
-};
-
-/**
- * Common ESD expressions passed as the arguments for the "Cancel" talk list data option in several
- * locations
- */
-static auto cancel_index = make_int_expression(99999);
-static auto cancel_message = make_int_expression(erdyes::event_text_for_talk::cancel);
-static auto cancel_args = std::array{
-    from::ezstate::expression(cancel_index),
-    from::ezstate::expression(cancel_message),
-    from::ezstate::expression(placeholder_expression),
-};
-
-/**
- * Common ESD expression that evaluates to true for the final "else" transition
- */
-static auto true_expression = std::array<unsigned char, 2>{0x41, 0xa1};
-
-/**
- * Common ESD expression for the generic talk menu closing
- */
-static auto talk_menu_closed_expression =
-    std::array<unsigned char, 40>{// start?
-                                  (unsigned char)0x7b,
-                                  // CheckSpecificPersonMenuIsOpen(1, 0)
-                                  0x82, 0x01, 0x00, 0x00, 0x00, 0x82, 0x00, 0x00, 0x00, 0x00, 0x86,
-                                  // 1
-                                  0x82, 0x01, 0x00, 0x00, 0x00,
-                                  // ==
-                                  0x95,
-                                  // CheckSpecificPersonGenericDialogIsOpen(0)
-                                  0x7a, 0x82, 0x00, 0x00, 0x00, 0x00, 0x85,
-                                  // 0
-                                  0x82, 0x00, 0x00, 0x00, 0x00,
-                                  // ==
-                                  0x95,
-                                  // &&
-                                  0x98,
-                                  // 0
-                                  0x82, 0x00, 0x00, 0x00, 0x00,
-                                  // ==
-                                  0x95,
-                                  // end
-                                  0xa1};
-
-/**
- * Common ESD expressions passed as the arguments for the "Back" talk list data option in several
- * locations
- */
-static auto back_index = make_int_expression(99999);
-static auto back_message = make_int_expression(erdyes::event_text_for_talk::back);
-static auto back_args = std::array{
-    from::ezstate::expression(back_index),
-    from::ezstate::expression(back_message),
-    from::ezstate::expression(placeholder_expression),
-};
-
-/**
- * Helper that holds commonly used structs for a AddTalkListData() call
- */
-class talkscript_menu_option
-{
-  public:
-    std::array<unsigned char, 6> index;
-    std::array<unsigned char, 6> message;
-    std::array<unsigned char, 9> condition;
-    std::array<from::ezstate::expression, 3> args;
-    from::ezstate::transition transition;
-
-    talkscript_menu_option(int index, int message_id, from::ezstate::state *target_state)
-        : index(make_int_expression(index)), message(make_int_expression(message_id)),
-          condition(make_talk_list_result_expression(index)),
-          args{this->index, this->message, placeholder_expression},
-          transition(target_state, this->condition)
-    {
-    }
-};
-
-/**
- * Talkscript for selecting a color. This has a variable number of events, because colors can
- * be added in the .ini file.
- */
-static auto color_branch_transitions = std::vector<from::ezstate::transition *>{};
-static auto color_branch_back_transition =
-    from::ezstate::transition{nullptr, from::ezstate::expression{true_expression}};
-static auto color_branch_state = from::ezstate::state{};
-
-static auto color_events = std::vector<from::ezstate::event>{};
-static auto color_transition = from::ezstate::transition{
-    &color_branch_state, from::ezstate::expression{talk_menu_closed_expression}};
-static auto color_transitions = std::array{&color_transition};
-static auto color_state =
-    from::ezstate::state{.transitions = from::ezstate::transitions{color_transitions}};
-
-/**
- * Successor ESD states for each color option. These do nothing and immediately return to the color
- * selector state.
- */
+// Talkscript for selecting a color or none
+static auto color_menu = talkscript_menu{};
 static auto color_selected_return_transition =
     from::ezstate::transition{nullptr, from::ezstate::expression{true_expression}};
 static auto color_selected_return_transitions = std::array{&color_selected_return_transition};
 static auto color_selected_states = std::vector<from::ezstate::state>{};
 static auto color_none_selected_state = from::ezstate::state{
     .transitions = from::ezstate::transitions{color_selected_return_transitions}};
-static auto color_opts = std::vector<talkscript_menu_option>{};
-static auto color_none_opt = talkscript_menu_option{
-    99998, erdyes::event_text_for_talk::none_selected, &color_none_selected_state};
 
-/**
- * Talkscript for selecting an intensity
- */
-static auto intensity_branch_transitions = std::vector<from::ezstate::transition *>{};
-static auto intensity_branch_back_transition =
-    from::ezstate::transition{nullptr, from::ezstate::expression{true_expression}};
-static auto intensity_branch_state = from::ezstate::state{};
-
-static auto intensity_events = std::vector<from::ezstate::event>{};
-static auto intensity_transition = from::ezstate::transition{
-    &intensity_branch_state, from::ezstate::expression{talk_menu_closed_expression}};
-static auto intensity_transitions = std::array{&intensity_transition};
-static auto intensity_state =
-    from::ezstate::state{.transitions = from::ezstate::transitions{intensity_transitions}};
-
-/**
- * Successor ESD states for each intensity option. These do nothing and immediately return to the
- * color selector state.
- */
+// Talkscript for selecting an intensity level
+static auto intensity_menu = talkscript_menu{};
 static auto intensity_selected_return_transition =
     from::ezstate::transition{nullptr, from::ezstate::expression{true_expression}};
 static auto intensity_selected_return_transitions =
     std::array{&intensity_selected_return_transition};
 static auto intensity_selected_states = std::vector<from::ezstate::state>{};
-static auto intensity_opts = std::vector<talkscript_menu_option>{};
 
-/**
- * Talkscript for selecting the color type (primary, secondary, or tertiary) and what to change
- * (color or intensity)
- */
+// Talkscript for selecting the color type (primary, secondary, or tertiary) and what to change
+// (color or intensity)
 static auto dye_target_color_successor_transition =
-    from::ezstate::transition{&color_state, from::ezstate::expression{true_expression}};
+    from::ezstate::transition{&color_menu.state, from::ezstate::expression{true_expression}};
 static auto dye_target_color_successor_transitions =
     std::array{&dye_target_color_successor_transition};
-
 static auto dye_target_intensity_successor_transition =
-    from::ezstate::transition{&intensity_state, from::ezstate::expression{true_expression}};
+    from::ezstate::transition{&intensity_menu.state, from::ezstate::expression{true_expression}};
 static auto dye_target_intensity_successor_transitions =
     std::array{&dye_target_intensity_successor_transition};
-
-// Dummy states that each option passes through before going to the color or intensity picker state.
-// The hook determines which option is being picked based on which of these states we went through.
 static auto primary_color_state = from::ezstate::state{
     .transitions = from::ezstate::transitions{dye_target_color_successor_transitions}};
 static auto secondary_color_state = from::ezstate::state{
@@ -253,147 +63,58 @@ static auto secondary_intensity_state = from::ezstate::state{
     .transitions = from::ezstate::transitions{dye_target_intensity_successor_transitions}};
 static auto tertiary_intensity_state = from::ezstate::state{
     .transitions = from::ezstate::transitions{dye_target_intensity_successor_transitions}};
+static auto dye_target_menu = talkscript_menu{{
+    {1, erdyes::event_text_for_talk::primary_color, &primary_color_state},
+    {2, erdyes::event_text_for_talk::secondary_color, &secondary_color_state},
+    {3, erdyes::event_text_for_talk::tertiary_color, &tertiary_color_state},
+    {4, erdyes::event_text_for_talk::primary_intensity, &primary_intensity_state},
+    {5, erdyes::event_text_for_talk::secondary_intensity, &secondary_intensity_state},
+    {6, erdyes::event_text_for_talk::tertiary_intensity, &tertiary_intensity_state},
+    {99, erdyes::event_text_for_talk::cancel, nullptr, true},
+}};
 
-static auto dye_target_primary_color_opt =
-    talkscript_menu_option{1, erdyes::event_text_for_talk::primary_color, &primary_color_state};
-static auto dye_target_secondary_color_opt =
-    talkscript_menu_option{2, erdyes::event_text_for_talk::secondary_color, &secondary_color_state};
-static auto dye_target_tertiary_color_opt =
-    talkscript_menu_option{3, erdyes::event_text_for_talk::tertiary_color, &tertiary_color_state};
-static auto dye_target_primary_intensity_opt = talkscript_menu_option{
-    4, erdyes::event_text_for_talk::primary_intensity, &primary_intensity_state};
-static auto dye_target_secondary_intensity_opt = talkscript_menu_option{
-    5, erdyes::event_text_for_talk::secondary_intensity, &secondary_intensity_state};
-static auto dye_target_tertiary_intensity_opt = talkscript_menu_option{
-    6, erdyes::event_text_for_talk::tertiary_intensity, &tertiary_intensity_state};
-
-static auto dye_target_branch_back_transition =
-    from::ezstate::transition{nullptr, from::ezstate::expression{true_expression}};
-
-static auto dye_target_branch_transitions = std::array{
-    &dye_target_primary_color_opt.transition,
-    &dye_target_secondary_color_opt.transition,
-    &dye_target_tertiary_color_opt.transition,
-    &dye_target_primary_intensity_opt.transition,
-    &dye_target_secondary_intensity_opt.transition,
-    &dye_target_tertiary_intensity_opt.transition,
-    &dye_target_branch_back_transition,
-};
-static auto dye_target_branch_state =
-    from::ezstate::state{.transitions = from::ezstate::transitions{dye_target_branch_transitions}};
-
-static auto dye_target_events = std::array{
-    from::ezstate::event{from::talk_command::close_shop_message},
-    from::ezstate::event{from::talk_command::clear_talk_list_data},
-    from::ezstate::event{from::talk_command::add_talk_list_data, dye_target_primary_color_opt.args},
-    from::ezstate::event{from::talk_command::add_talk_list_data,
-                         dye_target_secondary_color_opt.args},
-    from::ezstate::event{from::talk_command::add_talk_list_data,
-                         dye_target_tertiary_color_opt.args},
-    from::ezstate::event{from::talk_command::add_talk_list_data,
-                         dye_target_primary_intensity_opt.args},
-    from::ezstate::event{from::talk_command::add_talk_list_data,
-                         dye_target_secondary_intensity_opt.args},
-    from::ezstate::event{from::talk_command::add_talk_list_data,
-                         dye_target_tertiary_intensity_opt.args},
-    from::ezstate::event{from::talk_command::add_talk_list_data, cancel_args},
-    from::ezstate::event{from::talk_command::show_shop_message,
-                         show_generic_dialog_shop_message_args}};
-static auto dye_target_transition = from::ezstate::transition{
-    &dye_target_branch_state, from::ezstate::expression{talk_menu_closed_expression}};
-static auto dye_target_transitions = std::array{&dye_target_transition};
-static auto dye_target_state =
-    from::ezstate::state{.transitions = dye_target_transitions, .entry_events = dye_target_events};
-
-static auto apply_dyes_option_index = make_int_expression(67);
-static auto apply_dyes_message_id = make_int_expression(erdyes::event_text_for_talk::apply_dyes);
-static auto apply_dyes_args = std::array{
-    from::ezstate::expression(apply_dyes_option_index),
-    from::ezstate::expression(apply_dyes_message_id),
-    from::ezstate::expression(placeholder_expression),
-};
-static auto apply_dyes_expression = make_talk_list_result_expression(67);
-static auto apply_dyes_transition = from::ezstate::transition{
-    &dye_target_state,
-    apply_dyes_expression,
-};
+// Talkscript entry for entering the dyes menu from the Site of Grace main menu
+static auto apply_dyes_opt =
+    talkscript_menu_option{67, erdyes::event_text_for_talk::apply_dyes, &dye_target_menu.state};
 
 static void initialize_talkscript_states()
 {
-    // Create AddTalkListData() events and transitions for each color
-    auto &colors = erdyes::colors;
-
-    color_opts.clear();
-    color_opts.reserve(colors.size());
-
-    color_events.clear();
-    color_events.reserve(colors.size() + 5);
-    color_events.emplace_back(from::talk_command::close_shop_message);
-    color_events.emplace_back(from::talk_command::clear_talk_list_data);
-    color_events.emplace_back(from::talk_command::add_talk_list_data, color_none_opt.args);
-
-    color_branch_transitions.clear();
-    color_branch_transitions.reserve(colors.size() + 2);
-    color_branch_transitions.push_back(&color_none_opt.transition);
-
     color_selected_states.clear();
-    color_selected_states.reserve(colors.size());
+    color_selected_states.reserve(erdyes::colors.size());
 
-    for (int i = 0; i < colors.size(); i++)
+    std::vector<talkscript_menu_option> color_opts;
+    color_opts.reserve(erdyes::colors.size() + 2);
+    color_opts.emplace_back(999998, erdyes::event_text_for_talk::none_selected,
+                            &color_none_selected_state);
+    for (int i = 0; i < erdyes::colors.size(); i++)
     {
         auto &successor_state = color_selected_states.emplace_back(
             0, from::ezstate::transitions{color_selected_return_transitions});
-        auto &opt = color_opts.emplace_back(
-            i + 1, erdyes::event_text_for_talk::dye_color_deselected_start + i, &successor_state);
 
-        color_events.emplace_back(from::talk_command::add_talk_list_data, opt.args);
-        color_branch_transitions.push_back(&opt.transition);
+        color_opts.emplace_back(i + 1, erdyes::event_text_for_talk::dye_color_deselected_start + i,
+                                &successor_state);
     }
-
-    color_events.emplace_back(from::talk_command::add_talk_list_data, back_args);
-    color_events.emplace_back(from::talk_command::show_shop_message,
-                              show_generic_dialog_shop_message_args);
-    color_state.entry_events = from::ezstate::events{color_events};
-
-    color_branch_transitions.push_back(&color_branch_back_transition);
-    color_branch_state.transitions = from::ezstate::transitions{color_branch_transitions};
-
-    // Create AddTalkListData() events and transitions for each intensity
-    auto &intensities = erdyes::intensities;
-
-    intensity_opts.clear();
-    intensity_opts.reserve(colors.size());
-
-    intensity_events.clear();
-    intensity_events.reserve(intensities.size() + 4);
-    intensity_events.emplace_back(from::talk_command::close_shop_message);
-    intensity_events.emplace_back(from::talk_command::clear_talk_list_data);
-
-    intensity_branch_transitions.clear();
-    intensity_branch_transitions.reserve(intensities.size() + 2);
+    color_opts.emplace_back(999999, erdyes::event_text_for_talk::back, &dye_target_menu.state,
+                            true);
+    color_menu.set_opts(color_opts);
 
     intensity_selected_states.clear();
-    intensity_selected_states.reserve(intensities.size());
+    intensity_selected_states.reserve(erdyes::intensities.size());
 
-    for (int i = 0; i < intensities.size(); i++)
+    std::vector<talkscript_menu_option> intensity_opts;
+    intensity_opts.reserve(erdyes::intensities.size() + 1);
+    for (int i = 0; i < erdyes::intensities.size(); i++)
     {
         auto &successor_state = intensity_selected_states.emplace_back(
             0, from::ezstate::transitions{intensity_selected_return_transitions});
-        auto &opt = intensity_opts.emplace_back(
-            i + 1, erdyes::event_text_for_talk::dye_intensity_deselected_start + i,
-            &successor_state);
 
-        intensity_events.emplace_back(from::talk_command::add_talk_list_data, opt.args);
-        intensity_branch_transitions.push_back(&opt.transition);
+        intensity_opts.emplace_back(i + 1,
+                                    erdyes::event_text_for_talk::dye_intensity_deselected_start + i,
+                                    &successor_state);
     }
-
-    intensity_events.emplace_back(from::talk_command::add_talk_list_data, back_args);
-    intensity_events.emplace_back(from::talk_command::show_shop_message,
-                                  show_generic_dialog_shop_message_args);
-    intensity_state.entry_events = from::ezstate::events{intensity_events};
-
-    intensity_branch_transitions.push_back(&intensity_branch_back_transition);
-    intensity_branch_state.transitions = from::ezstate::transitions{intensity_branch_transitions};
+    intensity_opts.emplace_back(999999, erdyes::event_text_for_talk::back, &dye_target_menu.state,
+                                true);
+    intensity_menu.set_opts(intensity_opts);
 }
 
 static auto patched_events = std::array<from::ezstate::event, 100>{};
@@ -462,7 +183,7 @@ static bool patch_states(from::ezstate::state_group *state_group)
     // Add an "Apply dyes" menu option
     auto &events = add_menu_state->entry_events;
     std::copy(events.begin(), events.end(), patched_events.begin());
-    patched_events[events.size()] = {from::talk_command::add_talk_list_data, apply_dyes_args};
+    patched_events[events.size()] = {from::talk_command::add_talk_list_data, apply_dyes_opt.args};
     events = {patched_events.data(), events.size() + 1};
 
     // Add a transition to the "Apply dyes" menu
@@ -471,7 +192,7 @@ static bool patch_states(from::ezstate::state_group *state_group)
               patched_transitions.begin());
     std::copy(transitions.begin() + transition_index, transitions.end(),
               patched_transitions.begin() + transition_index + 1);
-    patched_transitions[transition_index] = &apply_dyes_transition;
+    patched_transitions[transition_index] = &apply_dyes_opt.transition;
     transitions = {patched_transitions.data(), transitions.size() + 1};
 
     return true;
@@ -485,27 +206,36 @@ static erdyes::talkscript::dye_target_type handle_dye_states(from::ezstate::stat
 {
     // Update the messages for the color picker dialog to show a dot next to the selected color
     auto update_color_messages = [](int selected_index) {
-        for (int i = 0; i < color_opts.size(); i++)
+        for (int i = 0; i < color_menu.opts.size() - 1; i++)
         {
-            auto base_message_id = selected_index == i
-                                       ? erdyes::event_text_for_talk::dye_color_selected_start
-                                       : erdyes::event_text_for_talk::dye_color_deselected_start;
-            color_opts[i].message = make_int_expression(base_message_id + i);
-        }
+            int message_id;
+            if (i == 0)
+            {
+                message_id = selected_index == -1 ? erdyes::event_text_for_talk::none_selected
+                                                  : erdyes::event_text_for_talk::none_deselected;
+            }
+            else
+            {
+                auto color_index = i - 1;
+                message_id = (selected_index == color_index
+                                  ? erdyes::event_text_for_talk::dye_color_selected_start
+                                  : erdyes::event_text_for_talk::dye_color_deselected_start) +
+                             color_index;
+            }
 
-        auto none_message_id = selected_index == -1 ? erdyes::event_text_for_talk::none_selected
-                                                    : erdyes::event_text_for_talk::none_deselected;
-        color_none_opt.message = make_int_expression(none_message_id);
+            color_menu.opts[i].message = make_int_expression(message_id);
+        }
     };
 
     // Update the messages for the intensity picker dialog to show a dot next to the selected color
     auto update_intensity_messages = [](int selected_index) {
-        for (int i = 0; i < intensity_opts.size(); i++)
+        for (int i = 0; i < intensity_menu.opts.size() - 1; i++)
         {
-            auto base_message_id =
-                selected_index == i ? erdyes::event_text_for_talk::dye_intensity_selected_start
-                                    : erdyes::event_text_for_talk::dye_intensity_deselected_start;
-            intensity_opts[i].message = make_int_expression(base_message_id + i);
+            int message_id = (selected_index == i
+                                  ? erdyes::event_text_for_talk::dye_intensity_selected_start
+                                  : erdyes::event_text_for_talk::dye_intensity_deselected_start) +
+                             i;
+            intensity_menu.opts[i].message = make_int_expression(message_id);
         }
     };
 
@@ -534,8 +264,8 @@ static erdyes::talkscript::dye_target_type handle_dye_states(from::ezstate::stat
         }
     };
 
-    if (state == &color_state || state == &intensity_state || state == &color_branch_state ||
-        state == &intensity_branch_state)
+    if (state == &color_menu.state || state == &color_menu.branch_state ||
+        state == &intensity_menu.state || state == &intensity_menu.branch_state)
     {
         return erdyes::talkscript::dye_target;
     }
@@ -615,11 +345,11 @@ static void ezstate_enter_state_detour(from::ezstate::state *state, from::ezstat
     {
         if (patch_states(machine->state_group))
         {
-            dye_target_branch_back_transition.target_state = machine->state_group->initial_state;
-            color_branch_back_transition.target_state = &dye_target_state;
-            color_selected_return_transition.target_state = &dye_target_state;
-            intensity_branch_back_transition.target_state = &dye_target_state;
-            intensity_selected_return_transition.target_state = &dye_target_state;
+            dye_target_menu.opts.back().transition.target_state =
+                machine->state_group->initial_state;
+
+            color_selected_return_transition.target_state = &dye_target_menu.state;
+            intensity_selected_return_transition.target_state = &dye_target_menu.state;
         }
     }
 
