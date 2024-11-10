@@ -17,9 +17,10 @@ int erdyes::primary_intensity_index = 3;
 int erdyes::secondary_intensity_index = 3;
 int erdyes::tertiary_intensity_index = 3;
 
-static const std::wstring primary_color_material_ex_name = L"[Albedo]_1_[Tint]";
-static const std::wstring secondary_color_material_ex_name = L"[Albedo]_3_[Tint]";
-static const std::wstring tertiary_color_material_ex_name = L"[Albedo]_4_[Tint]";
+static const std::wstring albedo1_material_ex_name = L"[Albedo]_1_[Tint]";
+static const std::wstring albedo2_material_ex_name = L"[Albedo]_2_[Tint]";
+static const std::wstring albedo3_material_ex_name = L"[Albedo]_3_[Tint]";
+static const std::wstring albedo4_material_ex_name = L"[Albedo]_4_[Tint]";
 
 static void update_colors(from::CS::ChrIns *);
 
@@ -51,7 +52,7 @@ static bool is_valid_intensity_index(int index)
  * Upsert a single material parameter by name using one of the configured color options
  */
 static void update_color(from::CS::ChrIns *chr, const std::wstring &name, erdyes::color &color,
-                         erdyes::intensity &intensity, float alpha = 1.0f)
+                         erdyes::intensity &intensity)
 {
     auto new_modifier = from::CS::CSChrModelParamModifierModule::modifier{
         .name = name.data(),
@@ -59,7 +60,7 @@ static void update_color(from::CS::ChrIns *chr, const std::wstring &name, erdyes
                   .value1 = color.red,
                   .value2 = color.green,
                   .value3 = color.blue,
-                  .value4 = alpha,
+                  .value4 = 1.0f,
                   .value5 = intensity.intensity},
     };
 
@@ -128,17 +129,19 @@ static void update_colors(from::CS::ChrIns *chr)
     // colors
     if (is_valid_color_index(primary_color_index))
     {
-        update_color(chr, primary_color_material_ex_name, erdyes::colors[primary_color_index],
+        update_color(chr, albedo1_material_ex_name, erdyes::colors[primary_color_index],
                      erdyes::intensities[primary_intensity_index]);
     }
     if (is_valid_color_index(secondary_color_index))
     {
-        update_color(chr, secondary_color_material_ex_name, erdyes::colors[secondary_color_index],
+        update_color(chr, albedo3_material_ex_name, erdyes::colors[secondary_color_index],
                      erdyes::intensities[secondary_intensity_index]);
     }
     if (is_valid_color_index(tertiary_color_index))
     {
-        update_color(chr, tertiary_color_material_ex_name, erdyes::colors[tertiary_color_index],
+        update_color(chr, albedo2_material_ex_name, erdyes::colors[tertiary_color_index],
+                     erdyes::intensities[tertiary_intensity_index]);
+        update_color(chr, albedo4_material_ex_name, erdyes::colors[tertiary_color_index],
                      erdyes::intensities[tertiary_intensity_index]);
     }
 }
