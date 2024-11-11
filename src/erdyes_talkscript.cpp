@@ -7,8 +7,8 @@
  * generated from the .ini config.
  */
 #include "erdyes_talkscript.hpp"
-#include "erdyes_colors.hpp"
 #include "erdyes_messages.hpp"
+#include "erdyes_state.hpp"
 #include "talkscript_utils.hpp"
 
 #include <array>
@@ -21,8 +21,8 @@
 #include <elden-x/menu/menu_man.hpp>
 #include <elden-x/utils/modutils.hpp>
 
-erdyes::talkscript::dye_target_type erdyes::talkscript::dye_target =
-    erdyes::talkscript::dye_target_type::none;
+// Stores the current color option being edited
+static erdyes::dye_target_type talkscript_dye_target;
 
 // Talkscript for selecting a color or none
 static auto color_menu = talkscript_menu{};
@@ -202,7 +202,7 @@ static bool patch_states(from::ezstate::state_group *state_group)
  * Triggers custom mod behavior when entering a patched talkscript state, returning the new dye
  * target
  */
-static erdyes::talkscript::dye_target_type handle_dye_states(from::ezstate::state *state)
+static void handle_dye_states(from::ezstate::state *state)
 {
     // Update the messages for the color picker dialog to show a dot next to the selected color
     auto update_color_messages = [](int selected_index) {
@@ -239,96 +239,67 @@ static erdyes::talkscript::dye_target_type handle_dye_states(from::ezstate::stat
         }
     };
 
-    // Set one of the dye selections after a color or intensity is chosen
-    auto set_dye_target_index = [](int index) {
-        switch (erdyes::talkscript::dye_target)
-        {
-        case erdyes::talkscript::dye_target_type::primary_color:
-            erdyes::primary_color_index = index;
-            break;
-        case erdyes::talkscript::dye_target_type::secondary_color:
-            erdyes::secondary_color_index = index;
-            break;
-        case erdyes::talkscript::dye_target_type::tertiary_color:
-            erdyes::tertiary_color_index = index;
-            break;
-        case erdyes::talkscript::dye_target_type::primary_intensity:
-            erdyes::primary_intensity_index = index;
-            break;
-        case erdyes::talkscript::dye_target_type::secondary_intensity:
-            erdyes::secondary_intensity_index = index;
-            break;
-        case erdyes::talkscript::dye_target_type::tertiary_intensity:
-            erdyes::tertiary_intensity_index = index;
-            break;
-        }
-    };
-
-    if (state == &color_menu.state || state == &color_menu.branch_state ||
-        state == &intensity_menu.state || state == &intensity_menu.branch_state)
-    {
-        return erdyes::talkscript::dye_target;
-    }
-
     // When one of the six options is chosen, store the selection and update the list of options
     // to include a dot next to the currently selected one
     if (state == &primary_color_state)
     {
         update_color_messages(erdyes::primary_color_index);
-        return erdyes::talkscript::dye_target_type::primary_color;
+        talkscript_dye_target = erdyes::dye_target_type::primary_color;
     }
     else if (state == &secondary_color_state)
     {
         update_color_messages(erdyes::secondary_color_index);
-        return erdyes::talkscript::dye_target_type::secondary_color;
+        talkscript_dye_target = erdyes::dye_target_type::secondary_color;
     }
     else if (state == &tertiary_color_state)
     {
         update_color_messages(erdyes::tertiary_color_index);
-        return erdyes::talkscript::dye_target_type::tertiary_color;
+        talkscript_dye_target = erdyes::dye_target_type::tertiary_color;
     }
     else if (state == &primary_intensity_state)
     {
         update_intensity_messages(erdyes::primary_intensity_index);
-        return erdyes::talkscript::dye_target_type::primary_intensity;
+        talkscript_dye_target = erdyes::dye_target_type::primary_intensity;
     }
     else if (state == &secondary_intensity_state)
     {
         update_intensity_messages(erdyes::secondary_intensity_index);
-        return erdyes::talkscript::dye_target_type::secondary_intensity;
+        talkscript_dye_target = erdyes::dye_target_type::secondary_intensity;
     }
     else if (state == &tertiary_intensity_state)
     {
         update_intensity_messages(erdyes::tertiary_intensity_index);
-        return erdyes::talkscript::dye_target_type::tertiary_intensity;
+        talkscript_dye_target = erdyes::dye_target_type::tertiary_intensity;
     }
-
     // Unset the current color if "none" is selected in the color picker
-    if (state == &color_none_selected_state)
+    else if (state == &color_none_selected_state)
     {
-        set_dye_target_index(-1);
-        return erdyes::talkscript::dye_target_type::none;
+        erdyes::set_selected_option(talkscript_dye_target, -1);
+        talkscript_dye_target = erdyes::dye_target_type::none;
     }
-    // Set the current color or intensity if a selection is made in the color or intensity
-    // picker
-    for (int i = 0; i < color_selected_states.size(); i++)
+    else
     {
-        if (state == &color_selected_states[i])
+        // Set the current color or intensity if a selection is made in the color or intensity
+        // picker
+        for (int i = 0; i < color_selected_states.size(); i++)
         {
-            set_dye_target_index(i);
-            return erdyes::talkscript::dye_target_type::none;
+            if (state == &color_selected_states[i])
+            {
+                erdyes::set_selected_option(talkscript_dye_target, i);
+                break;
+            }
         }
-    }
-    for (int i = 0; i < intensity_selected_states.size(); i++)
-    {
-        if (state == &intensity_selected_states[i])
+        for (int i = 0; i < intensity_selected_states.size(); i++)
         {
-            set_dye_target_index(i);
-            return erdyes::talkscript::dye_target_type::none;
+            if (state == &intensity_selected_states[i])
+            {
+                erdyes::set_selected_option(talkscript_dye_target, i);
+                break;
+            }
         }
-    }
 
-    return erdyes::talkscript::dye_target_type::none;
+        talkscript_dye_target = erdyes::dye_target_type::none;
+    }
 }
 
 static from::CS::CSMenuManImp **menu_man_addr;
@@ -353,7 +324,11 @@ static void ezstate_enter_state_detour(from::ezstate::state *state, from::ezstat
         }
     }
 
-    erdyes::talkscript::dye_target = handle_dye_states(state);
+    if (state != &color_menu.state && state != &color_menu.branch_state &&
+        state != &intensity_menu.state && state != &intensity_menu.branch_state)
+    {
+        handle_dye_states(state);
+    }
 
     ezstate_enter_state(state, machine, unk);
 }
@@ -383,7 +358,7 @@ void erdyes::setup_talkscript()
     });
 }
 
-int erdyes::talkscript::get_focused_entry()
+int erdyes::get_talkscript_focused_entry()
 {
     auto menu_man = *menu_man_addr;
     if (menu_man && menu_man->popup_menu && menu_man->popup_menu->window)
@@ -399,4 +374,9 @@ int erdyes::talkscript::get_focused_entry()
     }
 
     return -1;
+}
+
+erdyes::dye_target_type erdyes::get_talkscript_dye_target()
+{
+    return talkscript_dye_target;
 }

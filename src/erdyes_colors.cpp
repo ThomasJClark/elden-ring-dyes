@@ -1,21 +1,16 @@
+/**
+ * erdyes_colors.hpp
+ *
+ * Applies colors to the player character based on the current selections
+ */
 #include "erdyes_colors.hpp"
+#include "erdyes_state.hpp"
 #include "erdyes_talkscript.hpp"
 
 #include <elden-x/chr/world_chr_man.hpp>
 #include <elden-x/utils/modutils.hpp>
 #include <spdlog/spdlog.h>
 #include <string>
-#include <thread>
-
-std::vector<erdyes::color> erdyes::colors;
-std::vector<erdyes::intensity> erdyes::intensities;
-
-int erdyes::primary_color_index = -1;
-int erdyes::secondary_color_index = -1;
-int erdyes::tertiary_color_index = -1;
-int erdyes::primary_intensity_index = 3;
-int erdyes::secondary_intensity_index = 3;
-int erdyes::tertiary_intensity_index = 3;
 
 static const std::wstring albedo1_material_ex_name = L"[Albedo]_1_[Tint]";
 static const std::wstring albedo2_material_ex_name = L"[Albedo]_2_[Tint]";
@@ -95,33 +90,34 @@ static void update_colors(from::CS::ChrIns *chr)
 
     // Override the selected index with the focused dialog option, so you can hover over menu
     // options to preview them.
-    auto focused_entry = erdyes::talkscript::get_focused_entry();
-    switch (erdyes::talkscript::dye_target)
+    auto talkscript_focused_entry = erdyes::get_talkscript_focused_entry();
+    auto talkscript_dye_target = erdyes::get_talkscript_dye_target();
+    switch (talkscript_dye_target)
     {
-    case erdyes::talkscript::dye_target_type::primary_color:
+    case erdyes::dye_target_type::primary_color:
         // The minus 1 accounts for the "none" option in the color menu
-        if (is_valid_color_index(focused_entry - 1))
-            primary_color_index = focused_entry - 1;
+        if (is_valid_color_index(talkscript_focused_entry - 1))
+            primary_color_index = talkscript_focused_entry - 1;
         break;
-    case erdyes::talkscript::dye_target_type::secondary_color:
-        if (is_valid_color_index(focused_entry - 1))
-            secondary_color_index = focused_entry - 1;
+    case erdyes::dye_target_type::secondary_color:
+        if (is_valid_color_index(talkscript_focused_entry - 1))
+            secondary_color_index = talkscript_focused_entry - 1;
         break;
-    case erdyes::talkscript::dye_target_type::tertiary_color:
-        if (is_valid_color_index(focused_entry - 1))
-            tertiary_color_index = focused_entry - 1;
+    case erdyes::dye_target_type::tertiary_color:
+        if (is_valid_color_index(talkscript_focused_entry - 1))
+            tertiary_color_index = talkscript_focused_entry - 1;
         break;
-    case erdyes::talkscript::dye_target_type::primary_intensity:
-        if (is_valid_intensity_index(focused_entry))
-            primary_intensity_index = focused_entry;
+    case erdyes::dye_target_type::primary_intensity:
+        if (is_valid_intensity_index(talkscript_focused_entry))
+            primary_intensity_index = talkscript_focused_entry;
         break;
-    case erdyes::talkscript::dye_target_type::secondary_intensity:
-        if (is_valid_intensity_index(focused_entry))
-            secondary_intensity_index = focused_entry;
+    case erdyes::dye_target_type::secondary_intensity:
+        if (is_valid_intensity_index(talkscript_focused_entry))
+            secondary_intensity_index = talkscript_focused_entry;
         break;
-    case erdyes::talkscript::dye_target_type::tertiary_intensity:
-        if (is_valid_intensity_index(focused_entry))
-            tertiary_intensity_index = focused_entry;
+    case erdyes::dye_target_type::tertiary_intensity:
+        if (is_valid_intensity_index(talkscript_focused_entry))
+            tertiary_intensity_index = talkscript_focused_entry;
         break;
     }
 
@@ -129,16 +125,20 @@ static void update_colors(from::CS::ChrIns *chr)
     // colors
     if (is_valid_color_index(primary_color_index))
     {
+        // Albedo 1 typically controls the largest portion of armor and weapon models
         update_color(chr, albedo1_material_ex_name, erdyes::colors[primary_color_index],
                      erdyes::intensities[primary_intensity_index]);
     }
     if (is_valid_color_index(secondary_color_index))
     {
+        // Albedo 3 typically controls secondary materials and accents
         update_color(chr, albedo3_material_ex_name, erdyes::colors[secondary_color_index],
                      erdyes::intensities[secondary_intensity_index]);
     }
     if (is_valid_color_index(tertiary_color_index))
     {
+        // Albedo 2 and 4 are both used less commonly for small details, so group them both in as
+        // the "tertiary" color
         update_color(chr, albedo2_material_ex_name, erdyes::colors[tertiary_color_index],
                      erdyes::intensities[tertiary_intensity_index]);
         update_color(chr, albedo4_material_ex_name, erdyes::colors[tertiary_color_index],

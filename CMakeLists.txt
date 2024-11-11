@@ -25,7 +25,7 @@ FetchContent_Declare(spdlog
 
 FetchContent_Declare(elden-x
   GIT_REPOSITORY        https://github.com/ThomasJClark/elden-x.git
-  GIT_TAG               2f5148fd5f90f1e3c8e160b7a77871ab8d3a595d)
+  GIT_TAG               9f01dde0275be865fcad11677862bdc95ca4e29c)
 
 # # Set iterator debug level to 0 for ELDEN RING ABI compatibility
 add_definitions(-D_ITERATOR_DEBUG_LEVEL=0)
@@ -39,6 +39,7 @@ add_library(erdyes SHARED
   src/erdyes_colors.cpp  
   src/erdyes_config.cpp
   src/erdyes_messages.cpp
+  src/erdyes_state.cpp  
   src/erdyes_talkscript.cpp
   src/dllmain.cpp)
 

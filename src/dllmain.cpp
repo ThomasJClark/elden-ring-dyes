@@ -13,6 +13,7 @@
 #include "erdyes_colors.hpp"
 #include "erdyes_config.hpp"
 #include "erdyes_messages.hpp"
+#include "erdyes_state.hpp"
 #include "erdyes_talkscript.hpp"
 
 static std::thread mod_thread;
@@ -44,8 +45,10 @@ static void setup_mod()
 
     from::params::initialize();
 
-    spdlog::info("Sleeping an extra 12s to work potential compatibility issues...");
-    std::this_thread::sleep_for(std::chrono::seconds(12));
+    spdlog::info("Sleeping for 5s...");
+    std::this_thread::sleep_for(std::chrono::seconds(5));
+
+    erdyes::state_init();
 
     spdlog::info("Hooking messages...");
     erdyes::setup_messages();

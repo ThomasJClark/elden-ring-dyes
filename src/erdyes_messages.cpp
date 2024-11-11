@@ -5,7 +5,7 @@
  * function to return them.
  */
 #include "erdyes_messages.hpp"
-#include "erdyes_colors.hpp"
+#include "erdyes_state.hpp"
 
 #include <chrono>
 #include <map>
@@ -136,15 +136,15 @@ void erdyes::setup_messages()
     //     mod_event_text_for_talk = &event_text_for_talk_by_lang.at("english");
     // }
 
-    auto msg_repository_address = modutils::scan<from::CS::MsgRepositoryImp *>({
-        .aob = "48 8B 3D ?? ?? ?? ?? 44 0F B6 30 48 85 FF 75",
-        .relative_offsets = {{3, 7}},
-    });
+    // auto msg_repository_address = modutils::scan<from::CS::MsgRepositoryImp *>({
+    //     .aob = "48 8B 3D ?? ?? ?? ?? 44 0F B6 30 48 85 FF 75",
+    //     .relative_offsets = {{3, 7}},
+    // });
 
-    while (!(msg_repository = *msg_repository_address))
-    {
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    }
+    // while (!(msg_repository = *msg_repository_address))
+    // {
+    //     std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    // }
 
     // Hook MsgRepositoryImp::LookupEntry() to return messages added by the mod
     modutils::hook(
