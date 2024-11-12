@@ -8,6 +8,14 @@
 #include <mini/ini.h>
 #include <spdlog/spdlog.h>
 
+#ifdef _DEBUG
+bool erdyes::config::debug = true;
+#else
+bool erdyes::config::debug = false;
+#endif
+
+unsigned int erdyes::config::initialize_delay = 5000;
+
 /**
  * Parse an HTML-style hexadecimal color code, returning true if successful
  */
@@ -75,14 +83,28 @@ void erdyes::load_config(const std::filesystem::path &ini_path)
         return;
     }
 
+    if (ini.has("erdyes"))
+    {
+        auto &erdyes_config = ini["erdyes"];
+
+        if (erdyes_config.has("debug") && erdyes_config["debug"] != "false")
+        {
+            erdyes::config::debug = true;
+        }
+
+        if (erdyes_config.has("initialize_delay"))
+            erdyes::config::initialize_delay =
+                std::stoi(erdyes_config["initialize_delay"], nullptr, 10);
+    }
+
     if (ini.has("colors"))
     {
-        auto &colors_ini = ini["colors"];
+        auto &colors_config = ini["colors"];
 
         auto converter = std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>>{};
 
-        erdyes::colors.reserve(colors_ini.size());
-        for (auto &[name, hex_code] : ini["colors"])
+        erdyes::colors.reserve(colors_config.size());
+        for (auto &[name, hex_code] : colors_config)
         {
             int elements[3];
             if (parse_hex_code(hex_code, elements))
