@@ -80,12 +80,17 @@ static void update_color(from::CS::ChrIns *chr, const std::wstring &name, erdyes
  */
 static void update_colors(from::CS::ChrIns *chr)
 {
-    auto primary_color_index = erdyes::primary_color_index;
-    auto secondary_color_index = erdyes::secondary_color_index;
-    auto tertiary_color_index = erdyes::tertiary_color_index;
-    auto primary_intensity_index = erdyes::primary_intensity_index;
-    auto secondary_intensity_index = erdyes::secondary_intensity_index;
-    auto tertiary_intensity_index = erdyes::tertiary_intensity_index;
+    auto primary_color_index = erdyes::get_selected_option(erdyes::dye_target_type::primary_color);
+    auto secondary_color_index =
+        erdyes::get_selected_option(erdyes::dye_target_type::secondary_color);
+    auto tertiary_color_index =
+        erdyes::get_selected_option(erdyes::dye_target_type::tertiary_color);
+    auto primary_intensity_index =
+        erdyes::get_selected_option(erdyes::dye_target_type::primary_intensity);
+    auto secondary_intensity_index =
+        erdyes::get_selected_option(erdyes::dye_target_type::secondary_intensity);
+    auto tertiary_intensity_index =
+        erdyes::get_selected_option(erdyes::dye_target_type::tertiary_intensity);
 
     // Override the selected index with the focused dialog option, so you can hover over menu
     // options to preview them.

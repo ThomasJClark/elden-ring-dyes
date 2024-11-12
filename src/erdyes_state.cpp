@@ -31,14 +31,6 @@ static constexpr int dummy_good_tertiary_intensity_start = 6750000;
 std::vector<erdyes::color> erdyes::colors;
 std::vector<erdyes::intensity> erdyes::intensities;
 
-// TEMPORARY in-memory selections
-int erdyes::primary_color_index = default_color_index;
-int erdyes::secondary_color_index = default_color_index;
-int erdyes::tertiary_color_index = default_color_index;
-int erdyes::primary_intensity_index = default_intensity_index;
-int erdyes::secondary_intensity_index = default_intensity_index;
-int erdyes::tertiary_intensity_index = default_intensity_index;
-
 // AddRemoveItem(ItemType itemType, unsigned int itemId, int quantity)
 typedef void add_remove_item_fn(unsigned long long item_type, unsigned int item_id, int quantity);
 static add_remove_item_fn *add_remove_item;
@@ -178,6 +170,47 @@ void erdyes::add_intensity_option(const std::wstring &name, const std::wstring &
                              format_message(hex_code, name, false), i);
 }
 
+int erdyes::get_selected_option(erdyes::dye_target_type dye_target)
+{
+    auto world_chr_man = from::CS::WorldChrManImp::instance();
+    if (!world_chr_man || !world_chr_man->main_player)
+    {
+        return -1;
+    }
+
+    auto equip_inventory_data =
+        &world_chr_man->main_player->player_game_data->equip_game_data.equip_inventory_data;
+
+    auto [base_goods_id, count] = get_dye_target_goods_range(dye_target);
+    if (base_goods_id == -1)
+    {
+        return -1;
+    }
+
+    for (int i = 0; i < count; i++)
+    {
+        int goods_id = base_goods_id + i;
+        int item_id = item_type_goods + goods_id;
+        if (get_inventory_id(equip_inventory_data, &item_id) != -1)
+        {
+            return i;
+        }
+    }
+    switch (dye_target)
+    {
+    case erdyes::dye_target_type::primary_color:
+    case erdyes::dye_target_type::secondary_color:
+    case erdyes::dye_target_type::tertiary_color:
+        return default_color_index;
+    case erdyes::dye_target_type::primary_intensity:
+    case erdyes::dye_target_type::secondary_intensity:
+    case erdyes::dye_target_type::tertiary_intensity:
+        return default_intensity_index;
+    default:
+        return -1;
+    }
+}
+
 void erdyes::set_selected_option(erdyes::dye_target_type dye_target, int index)
 {
     auto [base_goods_id, count] = get_dye_target_goods_range(dye_target);
@@ -186,12 +219,21 @@ void erdyes::set_selected_option(erdyes::dye_target_type dye_target, int index)
         return;
     }
 
+    auto world_chr_man = from::CS::WorldChrManImp::instance();
+    if (!world_chr_man || !world_chr_man->main_player)
+    {
+        return;
+    }
+
+    auto equip_inventory_data =
+        &world_chr_man->main_player->player_game_data->equip_game_data.equip_inventory_data;
+
     // Remove any existing dummy items in the given range to clear out existing dye selections
     for (int i = 0; i < count; i++)
     {
         int goods_id = base_goods_id + i;
         int item_id = item_type_goods + goods_id;
-        // if (get_inventory_id(nullptr, &item_id) != -1)
+        if (get_inventory_id(equip_inventory_data, &item_id) != -1)
         {
             add_remove_item(item_type_goods, goods_id, -1);
         }
@@ -200,7 +242,6 @@ void erdyes::set_selected_option(erdyes::dye_target_type dye_target, int index)
     // If a new selection was chosen, add an item to the player's inventory to store this selection
     if (index != -1)
     {
-        spdlog::info("Add {}", base_goods_id + index);
         add_remove_item(item_type_goods, base_goods_id + index, 1);
     }
     // If "none" was chosen for a color, also remove the item for the corresponding intensity

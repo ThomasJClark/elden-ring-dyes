@@ -37,14 +37,6 @@ enum class dye_target_type
 extern std::vector<color> colors;
 extern std::vector<intensity> intensities;
 
-// Current color/intensity selections for the main player
-extern int primary_color_index;
-extern int secondary_color_index;
-extern int tertiary_color_index;
-extern int primary_intensity_index;
-extern int secondary_intensity_index;
-extern int tertiary_intensity_index;
-
 void state_init();
 
 /**
@@ -57,6 +49,12 @@ void add_color_option(const std::wstring &name, const std::wstring &hex_code, fl
  * Add an option that can be chosen as the intensity of the primary, secondary, or tertiary color
  */
 void add_intensity_option(const std::wstring &name, const std::wstring &hex_code, float i);
+
+/**
+ * @returns the selected index of the given color or intensity option to the given index, or -1 for
+ * none
+ */
+int get_selected_option(erdyes::dye_target_type);
 
 /**
  * Set one of the color or intensity option to the given index, or -1 for none

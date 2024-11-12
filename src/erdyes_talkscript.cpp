@@ -205,7 +205,8 @@ static bool patch_states(from::ezstate::state_group *state_group)
 static void handle_dye_states(from::ezstate::state *state)
 {
     // Update the messages for the color picker dialog to show a dot next to the selected color
-    auto update_color_messages = [](int selected_index) {
+    auto update_color_messages = []() {
+        int selected_index = erdyes::get_selected_option(talkscript_dye_target);
         for (int i = 0; i < color_menu.opts.size() - 1; i++)
         {
             int message_id;
@@ -228,7 +229,8 @@ static void handle_dye_states(from::ezstate::state *state)
     };
 
     // Update the messages for the intensity picker dialog to show a dot next to the selected color
-    auto update_intensity_messages = [](int selected_index) {
+    auto update_intensity_messages = []() {
+        int selected_index = erdyes::get_selected_option(talkscript_dye_target);
         for (int i = 0; i < intensity_menu.opts.size() - 1; i++)
         {
             int message_id = (selected_index == i
@@ -243,33 +245,33 @@ static void handle_dye_states(from::ezstate::state *state)
     // to include a dot next to the currently selected one
     if (state == &primary_color_state)
     {
-        update_color_messages(erdyes::primary_color_index);
         talkscript_dye_target = erdyes::dye_target_type::primary_color;
+        update_color_messages();
     }
     else if (state == &secondary_color_state)
     {
-        update_color_messages(erdyes::secondary_color_index);
         talkscript_dye_target = erdyes::dye_target_type::secondary_color;
+        update_color_messages();
     }
     else if (state == &tertiary_color_state)
     {
-        update_color_messages(erdyes::tertiary_color_index);
         talkscript_dye_target = erdyes::dye_target_type::tertiary_color;
+        update_color_messages();
     }
     else if (state == &primary_intensity_state)
     {
-        update_intensity_messages(erdyes::primary_intensity_index);
         talkscript_dye_target = erdyes::dye_target_type::primary_intensity;
+        update_intensity_messages();
     }
     else if (state == &secondary_intensity_state)
     {
-        update_intensity_messages(erdyes::secondary_intensity_index);
         talkscript_dye_target = erdyes::dye_target_type::secondary_intensity;
+        update_intensity_messages();
     }
     else if (state == &tertiary_intensity_state)
     {
-        update_intensity_messages(erdyes::tertiary_intensity_index);
         talkscript_dye_target = erdyes::dye_target_type::tertiary_intensity;
+        update_intensity_messages();
     }
     // Unset the current color if "none" is selected in the color picker
     else if (state == &color_none_selected_state)
