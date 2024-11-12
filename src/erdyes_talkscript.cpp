@@ -302,8 +302,6 @@ static void handle_dye_states(from::ezstate::state *state)
     }
 }
 
-static from::CS::CSMenuManImp **menu_man_addr;
-
 static void (*ezstate_enter_state)(from::ezstate::state *, from::ezstate::machine *, void *);
 
 /**
@@ -349,18 +347,11 @@ void erdyes::setup_talkscript()
             .relative_offsets = {{1, 5}},
         },
         ezstate_enter_state_detour, ezstate_enter_state);
-
-    menu_man_addr = modutils::scan<from::CS::CSMenuManImp *>({
-        .aob = "48 8b 05 ?? ?? ?? ??" // mov rax, qword ptr [CSMenuMan]
-               "33 db"                // xor ebx, ebx
-               "48 89 74 ??",         // mov qword ptr [rsp + ??], rsi
-        .relative_offsets = {{3, 7}},
-    });
 }
 
 int erdyes::get_talkscript_focused_entry()
 {
-    auto menu_man = *menu_man_addr;
+    auto menu_man = from::CS::CSMenuManImp::instance();
     if (menu_man && menu_man->popup_menu && menu_man->popup_menu->window)
     {
         auto dialog =

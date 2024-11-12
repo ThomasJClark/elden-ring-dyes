@@ -19,15 +19,14 @@ static const std::wstring albedo4_material_ex_name = L"[Albedo]_4_[Tint]";
 
 static void update_colors(from::CS::ChrIns *);
 
-static from::CS::WorldChrManImp **world_chr_man_addr;
-
 // CS::ChrIns::Update(float delta_time)
 static void (*chr_ins_update)(from::CS::ChrIns *, float);
 static void chr_ins_update_detour(from::CS::ChrIns *_this, float delta_time)
 {
     chr_ins_update(_this, delta_time);
 
-    if (_this == (*world_chr_man_addr)->main_player)
+    auto world_chr_man = from::CS::WorldChrManImp::instance();
+    if (world_chr_man && _this == world_chr_man->main_player)
     {
         update_colors(_this);
     }
@@ -148,14 +147,6 @@ static void update_colors(from::CS::ChrIns *chr)
 
 void erdyes::apply_colors_init()
 {
-    world_chr_man_addr = modutils::scan<from::CS::WorldChrManImp *>({
-        .aob = "48 8b 05 ?? ?? ?? ??"  // mov rax, [WorldChrMan]
-               "48 85 c0"              // test rax, rax
-               "74 0f"                 // jz end_label
-               "48 39 88 08 e5 01 00", // cmp [rax + 0x1e508], rcx
-        .relative_offsets = {{3, 7}},
-    });
-
     modutils::hook(
         {
             .aob = "84 c0"                          // test al, al

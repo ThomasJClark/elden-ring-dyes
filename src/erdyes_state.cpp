@@ -6,7 +6,7 @@
  */
 #include "erdyes_state.hpp"
 
-#include <elden-x/chr/player_game_data.hpp>
+#include <elden-x/chr/world_chr_man.hpp>
 #include <elden-x/paramdef/EQUIP_PARAM_GOODS_ST.hpp>
 #include <elden-x/utils/modutils.hpp>
 #include <spdlog/spdlog.h>
@@ -72,7 +72,6 @@ static void get_equip_param_goods_detour(get_equip_param_goods_result *result, i
         (id >= dummy_good_tertiary_intensity_start &&
          id < dummy_good_tertiary_intensity_start + erdyes::intensities.size()))
     {
-        spdlog::info("yeah dummy good {}", id);
         result->id = id;
         result->row = &dummy_good;
         result->unk = 3;
@@ -143,6 +142,29 @@ static constexpr std::wstring format_message(std::wstring const &hex_code, std::
            L"<FONT FACE='Bingus Sans' COLOR='" + hex_code + L"'>" + L"*</FONT> " + name;
 };
 
+/**
+ * @returns the range of dummy goods IDs used to store the given dye selection
+ */
+static std::pair<int, size_t> get_dye_target_goods_range(erdyes::dye_target_type dye_target)
+{
+    switch (dye_target)
+    {
+    case erdyes::dye_target_type::primary_color:
+        return {dummy_good_primary_color_start, erdyes::colors.size()};
+    case erdyes::dye_target_type::secondary_color:
+        return {dummy_good_secondary_color_start, erdyes::colors.size()};
+    case erdyes::dye_target_type::tertiary_color:
+        return {dummy_good_tertiary_color_start, erdyes::colors.size()};
+    case erdyes::dye_target_type::primary_intensity:
+        return {dummy_good_primary_intensity_start, erdyes::intensities.size()};
+    case erdyes::dye_target_type::secondary_intensity:
+        return {dummy_good_secondary_intensity_start, erdyes::intensities.size()};
+    case erdyes::dye_target_type::tertiary_intensity:
+        return {dummy_good_tertiary_intensity_start, erdyes::intensities.size()};
+    }
+    return {-1, 0};
+};
+
 void erdyes::add_color_option(const std::wstring &name, const std::wstring &hex_code, float r,
                               float g, float b)
 {
@@ -158,27 +180,11 @@ void erdyes::add_intensity_option(const std::wstring &name, const std::wstring &
 
 void erdyes::set_selected_option(erdyes::dye_target_type dye_target, int index)
 {
-    auto [base_goods_id, count] = [dye_target]() -> std::pair<int, size_t> {
-        switch (dye_target)
-        {
-        case erdyes::dye_target_type::primary_color:
-            return {dummy_good_primary_color_start, erdyes::colors.size()};
-        case erdyes::dye_target_type::secondary_color:
-            return {dummy_good_secondary_color_start, erdyes::colors.size()};
-        case erdyes::dye_target_type::tertiary_color:
-            return {dummy_good_tertiary_color_start, erdyes::colors.size()};
-        case erdyes::dye_target_type::primary_intensity:
-            return {dummy_good_primary_intensity_start, erdyes::intensities.size()};
-        case erdyes::dye_target_type::secondary_intensity:
-            return {dummy_good_secondary_intensity_start, erdyes::intensities.size()};
-        case erdyes::dye_target_type::tertiary_intensity:
-            return {dummy_good_tertiary_intensity_start, erdyes::intensities.size()};
-        }
-        return {-1, 0};
-    }();
-
+    auto [base_goods_id, count] = get_dye_target_goods_range(dye_target);
     if (base_goods_id == -1)
+    {
         return;
+    }
 
     // Remove any existing dummy items in the given range to clear out existing dye selections
     for (int i = 0; i < count; i++)
@@ -187,8 +193,7 @@ void erdyes::set_selected_option(erdyes::dye_target_type dye_target, int index)
         int item_id = item_type_goods + goods_id;
         // if (get_inventory_id(nullptr, &item_id) != -1)
         {
-            spdlog::info("Remove {}", goods_id);
-            add_remove_item(item_type_goods, goods_id, -1); // not removing???
+            add_remove_item(item_type_goods, goods_id, -1);
         }
     }
 
