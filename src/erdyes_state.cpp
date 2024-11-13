@@ -5,6 +5,7 @@
  * the results to the talkscript, messages, and color application systems.
  */
 #include "erdyes_state.hpp"
+#include "erdyes_messages.hpp"
 
 #include <elden-x/chr/world_chr_man.hpp>
 #include <elden-x/paramdef/EQUIP_PARAM_GOODS_ST.hpp>
@@ -134,14 +135,23 @@ void erdyes::state_init()
  * Format one of the color or intensity menu options. This contains an image (either blank for
  * padding or a dot to show it's selected), a colored block character, and the option name.
  */
-static constexpr std::wstring format_option_message(std::wstring const &hex_code,
+static constexpr std::wstring format_option_message(std::wstring const &color_block,
                                                     std::wstring const &name, bool selected)
 {
     auto img_src = selected ? L"MENU_Lockon_01a.png" : L"MENU_DummyTransparent.dds";
     return std::wstring{L"<IMG SRC='img://"} + img_src +
-           L"' WIDTH='20' HEIGHT='20' HSPACE='0' VSPACE='-1'>" +
-           L"<FONT FACE='Bingus Sans' COLOR='" + hex_code + L"'>" + L"*</FONT> " + name;
+           L"' WIDTH='20' HEIGHT='20' HSPACE='0' VSPACE='-1'>" + color_block + name;
 };
+
+/**
+ * Render a string of text that displays as a colored rectangle.
+ */
+static constexpr std::wstring format_color_block(const std::wstring &hex_code)
+{
+    // This font face doesn't exist - Scaleform has no fallback font and will render a convenient
+    // rectangle character
+    return L"<FONT FACE='Bingus Sans' COLOR='" + hex_code + L"'>" + L"*</FONT> ";
+}
 
 /**
  * @returns the range of dummy goods IDs used to store the given dye selection
@@ -169,50 +179,49 @@ static std::pair<int, size_t> get_dye_target_goods_range(erdyes::dye_target_type
 void erdyes::add_color_option(const std::wstring &name, const std::wstring &hex_code, float r,
                               float g, float b)
 {
-    colors.emplace_back(hex_code, format_option_message(hex_code, name, true),
-                        format_option_message(hex_code, name, false), r, g, b);
+    auto color_block = format_color_block(hex_code);
+    colors.emplace_back(color_block, format_option_message(color_block, name, true),
+                        format_option_message(color_block, name, false), r, g, b);
 }
 
 void erdyes::add_intensity_option(const std::wstring &name, const std::wstring &hex_code, float i)
 {
-    intensities.emplace_back(hex_code, format_option_message(hex_code, name, true),
-                             format_option_message(hex_code, name, false), i);
+    auto color_block = format_color_block(hex_code);
+    intensities.emplace_back(color_block, format_option_message(color_block, name, true),
+                             format_option_message(color_block, name, false), i);
 }
 
 void erdyes::update_dye_target_messages()
 {
     auto set_messages = [](dye_target_type color_target, dye_target_type intensity_target,
-                           const wchar_t *color_msg, const wchar_t *intensity_msg) {
+                           const std::wstring &color_msg, const std::wstring &intensity_msg) {
+        auto &color_message = dye_target_messages[static_cast<int>(color_target)];
+        auto &intensity_message = dye_target_messages[static_cast<int>(intensity_target)];
+
         auto color_index = get_selected_option(color_target);
         auto intensity_index = get_selected_option(intensity_target);
         if (color_index != -1)
         {
-            auto format_message = [](std::wstring const &str, std::wstring const &hex_code) {
-                return L"<FONT FACE='Bingus Sans' COLOR='" + hex_code + L"'>*</FONT> " + str;
-            };
-            dye_target_messages[static_cast<int>(color_target)] =
-                format_message(color_msg, colors[color_index].hex_code);
-            dye_target_messages[static_cast<int>(intensity_target)] =
-                format_message(intensity_msg, intensities[intensity_index].hex_code);
+            color_message = colors[color_index].color_block + color_msg;
+            intensity_message = intensities[intensity_index].color_block + intensity_msg;
         }
         else
         {
-            auto format_message = [](std::wstring const &str) {
-                return L"<IMG SRC='img://MENU_DummyTransparent.dds' WIDTH='12' "
-                       L"HEIGHT='1' HSPACE='0' VSPACE='-1'> " +
-                       str;
-            };
-            dye_target_messages[static_cast<int>(color_target)] = format_message(color_msg);
-            dye_target_messages[static_cast<int>(intensity_target)] = format_message(intensity_msg);
+            color_message = std::wstring{L"<IMG SRC='img://MENU_DummyTransparent.dds' WIDTH='12' "
+                                         L"HEIGHT='1' HSPACE='0' VSPACE='-1'> "} +
+                            color_msg;
+            intensity_message = std::wstring{L"<IMG SRC='img://MENU_DummyTransparent.dds' "
+                                             L"WIDTH='12' HEIGHT='1' HSPACE='0' VSPACE='-1'> "} +
+                                intensity_msg;
         }
     };
 
     set_messages(dye_target_type::primary_color, dye_target_type::primary_intensity,
-                 L"Primary color", L"Primary intensity");
+                 messages.primary_color, messages.primary_intensity);
     set_messages(dye_target_type::secondary_color, dye_target_type::secondary_intensity,
-                 L"Secondary color", L"Secondary intensity");
+                 messages.secondary_color, messages.secondary_intensity);
     set_messages(dye_target_type::tertiary_color, dye_target_type::tertiary_intensity,
-                 L"Tertiary color", L"Tertiary intensity");
+                 messages.tertiary_color, messages.tertiary_intensity);
 }
 
 int erdyes::get_selected_option(erdyes::dye_target_type dye_target)

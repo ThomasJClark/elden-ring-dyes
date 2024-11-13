@@ -1,9 +1,28 @@
 #pragma once
 
+#include <map>
+#include <string>
+
 namespace erdyes
 {
 
 void setup_messages();
+
+struct messages_type
+{
+    std::wstring apply_dyes;
+    std::wstring primary_color;
+    std::wstring secondary_color;
+    std::wstring tertiary_color;
+    std::wstring primary_intensity;
+    std::wstring secondary_intensity;
+    std::wstring tertiary_intensity;
+    std::wstring none;
+    std::wstring back;
+};
+
+extern messages_type messages;
+extern std::map<std::string, messages_type> messages_by_lang;
 
 // Message IDs in EventTextForTalk.fmg
 namespace event_text_for_talk

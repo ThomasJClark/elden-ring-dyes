@@ -58,18 +58,6 @@ static bool parse_hex_code(const std::string &str, int elements[3])
     return true;
 }
 
-constexpr auto selected_img_src = L"MENU_Lockon_01a.png";
-constexpr auto deselected_img_src = L"MENU_DummyTransparent.dds";
-
-static constexpr std::wstring format_message(std::wstring const &hex_code, std::wstring const &name,
-                                             bool selected)
-{
-    auto img_src = selected ? selected_img_src : deselected_img_src;
-    return std::wstring{L"<IMG SRC='img://"} + img_src +
-           L"' WIDTH='20' HEIGHT='20' HSPACE='0' VSPACE='-1'>" +
-           L"<FONT FACE='Bingus Sans' COLOR='" + hex_code + L"'>" + L"*</FONT> " + name;
-};
-
 void erdyes::load_config(const std::filesystem::path &ini_path)
 {
     spdlog::info("Loading config from {}", ini_path.string());

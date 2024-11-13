@@ -16,9 +16,11 @@
 #include <elden-x/utils/modutils.hpp>
 #include <spdlog/spdlog.h>
 
-// static const std::map<int, const std::wstring> *mod_event_text_for_talk;
+erdyes::messages_type erdyes::messages;
 
-static from::CS::MsgRepositoryImp *msg_repository = nullptr;
+std::wstring none_deselected_msg;
+std::wstring none_selected_msg;
+std::wstring back_msg;
 
 static const wchar_t *(*msg_repository_lookup_entry)(from::CS::MsgRepositoryImp *, unsigned int,
                                                      from::msgbnd, int);
@@ -39,7 +41,7 @@ static const wchar_t *msg_repository_lookup_entry_detour(from::CS::MsgRepository
     {
         if (msg_id == erdyes::event_text_for_talk::apply_dyes)
         {
-            return L"Apply dyes"; // TODO: intl
+            return erdyes::messages.apply_dyes.data();
         }
         else if (msg_id == erdyes::event_text_for_talk::primary_color)
         {
@@ -73,23 +75,15 @@ static const wchar_t *msg_repository_lookup_entry_detour(from::CS::MsgRepository
         }
         else if (msg_id == erdyes::event_text_for_talk::none_deselected)
         {
-            return L"<IMG SRC='img://MENU_DummyTransparent.dds' WIDTH='32' HEIGHT='1' HSPACE='0' "
-                   L"VSPACE='-1'> "
-                   L"None"; // TODO: intl
+            return none_deselected_msg.data();
         }
         else if (msg_id == erdyes::event_text_for_talk::none_selected)
         {
-            return "<IMG SRC='img://MENU_Lockon_01a.png' WIDTH='20' HEIGHT='20' HSPACE='0' "
-                   "VSPACE='-1'>"
-                   L"<IMG SRC='img://MENU_DummyTransparent.dds' WIDTH='12' HEIGHT='1' HSPACE='0' "
-                   L"VSPACE='-1'> "
-                   L"None"; // TODO: intl
+            return none_selected_msg.data();
         }
         else if (msg_id == erdyes::event_text_for_talk::back)
         {
-            return L"<IMG SRC='img://MENU_DummyTransparent.dds' WIDTH='32' HEIGHT='1' HSPACE='0' "
-                   L"VSPACE='-1'> "
-                   L"Back"; // TODO: intl
+            return back_msg.data();
         }
         else if (msg_id >= erdyes::event_text_for_talk::dye_color_selected_start &&
                  msg_id <
@@ -130,27 +124,44 @@ void erdyes::setup_messages()
 {
     // Pick the messages to use based on the player's selected language for the game in Steam
     auto language = get_steam_language();
-    // auto localized_messages = event_text_for_talk_by_lang.find(language);
-    // if (localized_messages != event_text_for_talk_by_lang.end())
-    // {
-    //     spdlog::info("Detected language \"{}\"", language);
-    //     mod_event_text_for_talk = &localized_messages->second;
-    // }
-    // else
-    // {
-    //     spdlog::warn("Unknown language \"{}\", defaulting to English", language);
-    //     mod_event_text_for_talk = &event_text_for_talk_by_lang.at("english");
-    // }
 
-    // auto msg_repository_address = modutils::scan<from::CS::MsgRepositoryImp *>({
-    //     .aob = "48 8B 3D ?? ?? ?? ?? 44 0F B6 30 48 85 FF 75",
-    //     .relative_offsets = {{3, 7}},
-    // });
+    auto &english_messages = messages_by_lang.at("english");
+    auto localized_messages = messages_by_lang.find(language);
+    if (localized_messages != messages_by_lang.end())
+    {
+        spdlog::info("Detected language \"{}\"", language);
+        messages = localized_messages->second;
 
-    // while (!(msg_repository = *msg_repository_address))
-    // {
-    //     std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    // }
+        for (int i = 0; i < sizeof(messages) / sizeof(std::wstring); i++)
+        {
+            // Default any untranslated messages to English
+            auto &str = (&messages.apply_dyes)[i];
+            if (str.empty())
+            {
+                str = (&english_messages.apply_dyes)[i];
+            }
+        }
+    }
+    else
+    {
+        spdlog::warn("Unknown language \"{}\", defaulting to English", language);
+        messages = english_messages;
+    }
+
+    none_deselected_msg =
+        L"<IMG SRC='img://MENU_DummyTransparent.dds' WIDTH='32' HEIGHT='1' HSPACE='0'"
+        L" VSPACE='-1'> " +
+        messages.none;
+
+    none_selected_msg =
+        L"<IMG SRC='img://MENU_Lockon_01a.png' WIDTH='20' HEIGHT='20' HSPACE='0' VSPACE='-1'>"
+        L"<IMG SRC='img://MENU_DummyTransparent.dds' WIDTH='12' HEIGHT='1' HSPACE='0' "
+        L"VSPACE='-1'> " +
+        messages.none;
+
+    back_msg = L"<IMG SRC='img://MENU_DummyTransparent.dds' WIDTH='32' HEIGHT='1' HSPACE='0' "
+               L"VSPACE='-1'> " +
+               messages.back;
 
     // Hook MsgRepositoryImp::LookupEntry() to return messages added by the mod
     modutils::hook(

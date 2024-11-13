@@ -9,7 +9,7 @@ namespace erdyes
 
 struct color
 {
-    std::wstring hex_code;
+    std::wstring color_block;
     std::wstring selected_message;
     std::wstring deselected_message;
     float red;
@@ -19,7 +19,7 @@ struct color
 
 struct intensity
 {
-    std::wstring hex_code;
+    std::wstring color_block;
     std::wstring selected_message;
     std::wstring deselected_message;
     float intensity;
