@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <string>
 #include <vector>
 
@@ -8,6 +9,7 @@ namespace erdyes
 
 struct color
 {
+    std::wstring hex_code;
     std::wstring selected_message;
     std::wstring deselected_message;
     float red;
@@ -17,14 +19,15 @@ struct color
 
 struct intensity
 {
+    std::wstring hex_code;
     std::wstring selected_message;
     std::wstring deselected_message;
     float intensity;
 };
 
-enum class dye_target_type
+enum class dye_target_type : int
 {
-    none,
+    none = -1,
     primary_color,
     secondary_color,
     tertiary_color,
@@ -32,6 +35,8 @@ enum class dye_target_type
     secondary_intensity,
     tertiary_intensity,
 };
+
+extern std::array<std::wstring, 6> dye_target_messages;
 
 // Available colors/intensities that can be selected
 extern std::vector<color> colors;
@@ -49,6 +54,12 @@ void add_color_option(const std::wstring &name, const std::wstring &hex_code, fl
  * Add an option that can be chosen as the intensity of the primary, secondary, or tertiary color
  */
 void add_intensity_option(const std::wstring &name, const std::wstring &hex_code, float i);
+
+/**
+ * Update "Primary color", "Secondary color", etc. messages to show the selected color for each
+ * category
+ */
+void update_dye_target_messages();
 
 /**
  * @returns the selected index of the given color or intensity option to the given index, or -1 for

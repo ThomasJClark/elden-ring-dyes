@@ -204,6 +204,7 @@ static bool patch_states(from::ezstate::state_group *state_group)
  */
 static void handle_dye_states(from::ezstate::state *state)
 {
+
     // Update the messages for the color picker dialog to show a dot next to the selected color
     auto update_color_messages = []() {
         int selected_index = erdyes::get_selected_option(talkscript_dye_target);
@@ -241,9 +242,14 @@ static void handle_dye_states(from::ezstate::state *state)
         }
     };
 
+    if (state == &dye_target_menu.state)
+    {
+        talkscript_dye_target = erdyes::dye_target_type::none;
+        erdyes::update_dye_target_messages();
+    }
     // When one of the six options is chosen, store the selection and update the list of options
     // to include a dot next to the currently selected one
-    if (state == &primary_color_state)
+    else if (state == &primary_color_state)
     {
         talkscript_dye_target = erdyes::dye_target_type::primary_color;
         update_color_messages();

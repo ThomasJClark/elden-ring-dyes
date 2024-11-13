@@ -28,8 +28,17 @@ static constexpr int dummy_good_primary_intensity_start = 6730000;
 static constexpr int dummy_good_secondary_intensity_start = 6740000;
 static constexpr int dummy_good_tertiary_intensity_start = 6750000;
 
+std::array<std::wstring, 6> erdyes::dye_target_messages;
+
 std::vector<erdyes::color> erdyes::colors;
 std::vector<erdyes::intensity> erdyes::intensities;
+
+static bool is_color(erdyes::dye_target_type dye_target)
+{
+    return dye_target == erdyes::dye_target_type::primary_color ||
+           dye_target == erdyes::dye_target_type::secondary_color ||
+           dye_target == erdyes::dye_target_type::tertiary_color;
+}
 
 // AddRemoveItem(ItemType itemType, unsigned int itemId, int quantity)
 typedef void add_remove_item_fn(unsigned long long item_type, unsigned int item_id, int quantity);
@@ -125,8 +134,8 @@ void erdyes::state_init()
  * Format one of the color or intensity menu options. This contains an image (either blank for
  * padding or a dot to show it's selected), a colored block character, and the option name.
  */
-static constexpr std::wstring format_message(std::wstring const &hex_code, std::wstring const &name,
-                                             bool selected)
+static constexpr std::wstring format_option_message(std::wstring const &hex_code,
+                                                    std::wstring const &name, bool selected)
 {
     auto img_src = selected ? L"MENU_Lockon_01a.png" : L"MENU_DummyTransparent.dds";
     return std::wstring{L"<IMG SRC='img://"} + img_src +
@@ -160,14 +169,50 @@ static std::pair<int, size_t> get_dye_target_goods_range(erdyes::dye_target_type
 void erdyes::add_color_option(const std::wstring &name, const std::wstring &hex_code, float r,
                               float g, float b)
 {
-    colors.emplace_back(format_message(hex_code, name, true), format_message(hex_code, name, false),
-                        r, g, b);
+    colors.emplace_back(hex_code, format_option_message(hex_code, name, true),
+                        format_option_message(hex_code, name, false), r, g, b);
 }
 
 void erdyes::add_intensity_option(const std::wstring &name, const std::wstring &hex_code, float i)
 {
-    intensities.emplace_back(format_message(hex_code, name, true),
-                             format_message(hex_code, name, false), i);
+    intensities.emplace_back(hex_code, format_option_message(hex_code, name, true),
+                             format_option_message(hex_code, name, false), i);
+}
+
+void erdyes::update_dye_target_messages()
+{
+    auto set_messages = [](dye_target_type color_target, dye_target_type intensity_target,
+                           const wchar_t *color_msg, const wchar_t *intensity_msg) {
+        auto color_index = get_selected_option(color_target);
+        auto intensity_index = get_selected_option(intensity_target);
+        if (color_index != -1)
+        {
+            auto format_message = [](std::wstring const &str, std::wstring const &hex_code) {
+                return L"<FONT FACE='Bingus Sans' COLOR='" + hex_code + L"'>*</FONT> " + str;
+            };
+            dye_target_messages[static_cast<int>(color_target)] =
+                format_message(color_msg, colors[color_index].hex_code);
+            dye_target_messages[static_cast<int>(intensity_target)] =
+                format_message(intensity_msg, intensities[intensity_index].hex_code);
+        }
+        else
+        {
+            auto format_message = [](std::wstring const &str) {
+                return L"<IMG SRC='img://MENU_DummyTransparent.dds' WIDTH='12' "
+                       L"HEIGHT='1' HSPACE='0' VSPACE='-1'> " +
+                       str;
+            };
+            dye_target_messages[static_cast<int>(color_target)] = format_message(color_msg);
+            dye_target_messages[static_cast<int>(intensity_target)] = format_message(intensity_msg);
+        }
+    };
+
+    set_messages(dye_target_type::primary_color, dye_target_type::primary_intensity,
+                 L"Primary color", L"Primary intensity");
+    set_messages(dye_target_type::secondary_color, dye_target_type::secondary_intensity,
+                 L"Secondary color", L"Secondary intensity");
+    set_messages(dye_target_type::tertiary_color, dye_target_type::tertiary_intensity,
+                 L"Tertiary color", L"Tertiary intensity");
 }
 
 int erdyes::get_selected_option(erdyes::dye_target_type dye_target)
@@ -196,19 +241,7 @@ int erdyes::get_selected_option(erdyes::dye_target_type dye_target)
             return i;
         }
     }
-    switch (dye_target)
-    {
-    case erdyes::dye_target_type::primary_color:
-    case erdyes::dye_target_type::secondary_color:
-    case erdyes::dye_target_type::tertiary_color:
-        return default_color_index;
-    case erdyes::dye_target_type::primary_intensity:
-    case erdyes::dye_target_type::secondary_intensity:
-    case erdyes::dye_target_type::tertiary_intensity:
-        return default_intensity_index;
-    default:
-        return -1;
-    }
+    return is_color(dye_target) ? default_color_index : default_intensity_index;
 }
 
 void erdyes::set_selected_option(erdyes::dye_target_type dye_target, int index)

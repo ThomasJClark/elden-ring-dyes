@@ -43,27 +43,33 @@ static const wchar_t *msg_repository_lookup_entry_detour(from::CS::MsgRepository
         }
         else if (msg_id == erdyes::event_text_for_talk::primary_color)
         {
-            return L"Primary color"; // TODO: intl
+            auto i = static_cast<int>(erdyes::dye_target_type::primary_color);
+            return erdyes::dye_target_messages[i].data();
         }
         else if (msg_id == erdyes::event_text_for_talk::secondary_color)
         {
-            return L"Secondary color"; // TODO: intl
+            auto i = static_cast<int>(erdyes::dye_target_type::secondary_color);
+            return erdyes::dye_target_messages[i].data();
         }
         else if (msg_id == erdyes::event_text_for_talk::tertiary_color)
         {
-            return L"Tertiary color"; // TODO: intl
+            auto i = static_cast<int>(erdyes::dye_target_type::tertiary_color);
+            return erdyes::dye_target_messages[i].data();
         }
         else if (msg_id == erdyes::event_text_for_talk::primary_intensity)
         {
-            return L"Primary intensity"; // TODO: intl
+            auto i = static_cast<int>(erdyes::dye_target_type::primary_intensity);
+            return erdyes::dye_target_messages[i].data();
         }
         else if (msg_id == erdyes::event_text_for_talk::secondary_intensity)
         {
-            return L"Secondary intensity"; // TODO: intl
+            auto i = static_cast<int>(erdyes::dye_target_type::secondary_intensity);
+            return erdyes::dye_target_messages[i].data();
         }
         else if (msg_id == erdyes::event_text_for_talk::tertiary_intensity)
         {
-            return L"Tertiary intensity"; // TODO: intl
+            auto i = static_cast<int>(erdyes::dye_target_type::tertiary_intensity);
+            return erdyes::dye_target_messages[i].data();
         }
         else if (msg_id == erdyes::event_text_for_talk::none_deselected)
         {
