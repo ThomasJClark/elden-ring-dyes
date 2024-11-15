@@ -125,43 +125,54 @@ void erdyes::setup_messages()
     // Pick the messages to use based on the player's selected language for the game in Steam
     auto language = get_steam_language();
 
-    auto &english_messages = messages_by_lang.at("english");
     auto localized_messages = messages_by_lang.find(language);
     if (localized_messages != messages_by_lang.end())
     {
         spdlog::info("Detected language \"{}\"", language);
         messages = localized_messages->second;
-
-        for (int i = 0; i < sizeof(messages) / sizeof(std::wstring); i++)
-        {
-            // Default any untranslated messages to English
-            auto &str = (&messages.apply_dyes)[i];
-            if (str.empty())
-            {
-                str = (&english_messages.apply_dyes)[i];
-            }
-        }
     }
     else
     {
         spdlog::warn("Unknown language \"{}\", defaulting to English", language);
-        messages = english_messages;
+        messages = messages_by_lang.at("english");
     }
 
-    none_deselected_msg =
-        L"<IMG SRC='img://MENU_DummyTransparent.dds' WIDTH='32' HEIGHT='1' HSPACE='0'"
-        L" VSPACE='-1'> " +
-        messages.none;
+    // Reverse the order of the images and text for RTL. Elden Ring doesn't support bidirectional
+    // text (I think), so we have to manually change the order to the right direction.
+    if (language == "arabic")
+    {
+        none_deselected_msg =
+            messages.none +
+            L"<IMG SRC='img://MENU_DummyTransparent.dds' WIDTH='32' HEIGHT='1' HSPACE='0'"
+            L" VSPACE='-1'> ";
 
-    none_selected_msg =
-        L"<IMG SRC='img://MENU_Lockon_01a.png' WIDTH='20' HEIGHT='20' HSPACE='0' VSPACE='-1'>"
-        L"<IMG SRC='img://MENU_DummyTransparent.dds' WIDTH='12' HEIGHT='1' HSPACE='0' "
-        L"VSPACE='-1'> " +
-        messages.none;
+        none_selected_msg =
+            messages.none +
+            L"<IMG SRC='img://MENU_DummyTransparent.dds' WIDTH='12' HEIGHT='1' HSPACE='0' "
+            L"VSPACE='-1'> " +
+            L"<IMG SRC='img://MENU_Lockon_01a.png' WIDTH='20' HEIGHT='20' HSPACE='0' VSPACE='-1'>";
 
-    back_msg = L"<IMG SRC='img://MENU_DummyTransparent.dds' WIDTH='32' HEIGHT='1' HSPACE='0' "
-               L"VSPACE='-1'> " +
-               messages.back;
+        back_msg = messages.back +
+                   L" <IMG SRC='img://MENU_DummyTransparent.dds' WIDTH='32' HEIGHT='1' HSPACE='0' "
+                   L"VSPACE='-1'>";
+    }
+    else
+    {
+        none_deselected_msg =
+            L"<IMG SRC='img://MENU_DummyTransparent.dds' WIDTH='32' HEIGHT='1' HSPACE='0'"
+            L" VSPACE='-1'> " +
+            messages.none;
+
+        none_selected_msg =
+            L"<IMG SRC='img://MENU_Lockon_01a.png' WIDTH='20' HEIGHT='20' HSPACE='0' VSPACE='-1'>"
+            L"<IMG SRC='img://MENU_DummyTransparent.dds' WIDTH='12' HEIGHT='1' HSPACE='0' "
+            L"VSPACE='-1'> " +
+            messages.none;
+
+        back_msg = L"<IMG SRC='img://MENU_DummyTransparent.dds' WIDTH='32' HEIGHT='1' HSPACE='0' "
+                   L"VSPACE='-1'> " +
+                   messages.back;
+    }
 
     // Hook MsgRepositoryImp::LookupEntry() to return messages added by the mod
     modutils::hook(
