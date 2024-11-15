@@ -17,18 +17,32 @@ static const std::wstring albedo2_material_ex_name = L"[Albedo]_2_[Tint]";
 static const std::wstring albedo3_material_ex_name = L"[Albedo]_3_[Tint]";
 static const std::wstring albedo4_material_ex_name = L"[Albedo]_4_[Tint]";
 
-static void update_colors(from::CS::ChrIns *);
+static const int player_copy_sentinel = 0;
 
-// CS::ChrIns::Update(float delta_time)
-static void (*chr_ins_update)(from::CS::ChrIns *, float);
-static void chr_ins_update_detour(from::CS::ChrIns *_this, float delta_time)
+static void update_main_player_colors(from::CS::ChrIns *);
+
+// CS::PlayerIns::Update(float delta_time)
+static void (*cs_player_update)(from::CS::PlayerIns *, float);
+static void cs_player_update_detour(from::CS::PlayerIns *_this, float delta_time)
 {
-    chr_ins_update(_this, delta_time);
+    cs_player_update(_this, delta_time);
 
-    auto world_chr_man = from::CS::WorldChrManImp::instance();
-    if (world_chr_man && _this == world_chr_man->main_player)
+    auto &chr_asm = _this->player_game_data->equip_game_data.chr_asm;
+
+    // Update the main player's colors based on the items in their inventory
+    if (_this == from::CS::WorldChrManImp::instance()->main_player)
     {
-        update_colors(_this);
+        update_main_player_colors(_this);
+    }
+    // Apply the main player logic to any mimic tears as well
+    else if (chr_asm.gear_param_ids.unused4 == player_copy_sentinel)
+    {
+        update_main_player_colors(_this);
+    }
+    // TODO: apply dyes to other players and their mimics
+    else
+    {
+        // ...
     }
 }
 
@@ -45,8 +59,8 @@ static bool is_valid_intensity_index(int index)
 /**
  * Upsert a single material parameter by name using one of the configured color options
  */
-static void update_color(from::CS::ChrIns *chr, const std::wstring &name, erdyes::color &color,
-                         erdyes::intensity &intensity)
+static void update_color(from::CS::ChrIns *chr, const std::wstring &name,
+                         const erdyes::color &color, const erdyes::intensity &intensity)
 {
     auto new_modifier = from::CS::CSChrModelParamModifierModule::modifier{
         .name = name.data(),
@@ -76,9 +90,10 @@ static void update_color(from::CS::ChrIns *chr, const std::wstring &name, erdyes
 };
 
 /**
- * Updates material parameters for the given character based on the selected colors
+ * Updates all material parameters for the given character based on the main player's selected
+ * colors
  */
-static void update_colors(from::CS::ChrIns *chr)
+static void update_main_player_colors(from::CS::ChrIns *chr)
 {
     auto primary_color_index = erdyes::get_selected_option(erdyes::dye_target_type::primary_color);
     auto secondary_color_index =
@@ -150,6 +165,22 @@ static void update_colors(from::CS::ChrIns *chr)
     }
 }
 
+static void (*copy_player_character_data)(from::CS::PlayerIns *, from::CS::PlayerIns *);
+static void copy_player_character_data_detour(from::CS::PlayerIns *target,
+                                              from::CS::PlayerIns *source)
+{
+    copy_player_character_data(target, source);
+
+    // When a player character is copied onto an NPC (Mimic Tear), store a number in the ChrAsm to
+    // make sure dyes also apply to the mimic.
+    auto world_chr_man = from::CS::WorldChrManImp::instance();
+    if (world_chr_man && source == world_chr_man->main_player)
+    {
+        auto &chr_asm = target->player_game_data->equip_game_data.chr_asm;
+        chr_asm.gear_param_ids.unused4 = player_copy_sentinel;
+    }
+}
+
 void erdyes::apply_colors_init()
 {
     modutils::hook(
@@ -161,5 +192,15 @@ void erdyes::apply_colors_init()
                    "c7 87 ?? ?? ?? ?? 00 00 00 00", // mov dword ptr [rdi + ????], 0
             .offset = -203,
         },
-        chr_ins_update_detour, chr_ins_update);
+        cs_player_update_detour, cs_player_update);
+
+    modutils::hook(
+        {
+            .aob = "c7 44 24 30 00 00 00 00" // mov [rsp + 0x30], 0x0
+                   "48 8d 54 24 28"          // lea rdx, [rsp + 0x28]
+                   "48 8b 8b 80 05 00 00"    // mov rcx, [rbx + 0x580]
+                   "e8 ?? ?? ?? ??",         // call PlayerGameData::PopulatePcInfoBuffer
+            .offset = -216,
+        },
+        copy_player_character_data_detour, copy_player_character_data);
 }
