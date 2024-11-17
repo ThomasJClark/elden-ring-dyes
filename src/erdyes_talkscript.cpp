@@ -117,6 +117,7 @@ static void initialize_talkscript_states()
     intensity_menu.set_opts(intensity_opts);
 }
 
+static from::ezstate::machine *patched_machine;
 static auto patched_events = std::array<from::ezstate::event, 100>{};
 static auto patched_transitions = std::array<from::ezstate::transition *, 100>{};
 
@@ -322,6 +323,8 @@ static void ezstate_enter_state_detour(from::ezstate::state *state, from::ezstat
     {
         if (patch_states(machine->state_group))
         {
+            patched_machine = machine;
+
             dye_target_menu.opts.back().transition.target_state =
                 machine->state_group->initial_state;
 
@@ -330,8 +333,9 @@ static void ezstate_enter_state_detour(from::ezstate::state *state, from::ezstat
         }
     }
 
-    if (state != &color_menu.state && state != &color_menu.branch_state &&
-        state != &intensity_menu.state && state != &intensity_menu.branch_state)
+    if (machine == patched_machine && state != &color_menu.state &&
+        state != &color_menu.branch_state && state != &intensity_menu.state &&
+        state != &intensity_menu.branch_state)
     {
         handle_dye_states(state);
     }
