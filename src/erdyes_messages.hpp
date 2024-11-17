@@ -24,6 +24,11 @@ struct messages_type
 extern messages_type messages;
 extern std::map<std::string, messages_type> messages_by_lang;
 
+/**
+ * Format one of the color or intensity menu options
+ */
+std::wstring format_option_message(std::wstring const &label, bool selected, bool rtl = false);
+
 // Message IDs in EventTextForTalk.fmg
 namespace event_text_for_talk
 {

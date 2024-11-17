@@ -18,9 +18,10 @@
 
 erdyes::messages_type erdyes::messages;
 
-std::wstring none_deselected_msg;
-std::wstring none_selected_msg;
-std::wstring back_msg;
+static std::wstring apply_dyes_msg;
+static std::wstring none_deselected_msg;
+static std::wstring none_selected_msg;
+static std::wstring back_msg;
 
 static const wchar_t *(*msg_repository_lookup_entry)(from::CS::MsgRepositoryImp *, unsigned int,
                                                      from::msgbnd, int);
@@ -41,7 +42,7 @@ static const wchar_t *msg_repository_lookup_entry_detour(from::CS::MsgRepository
     {
         if (msg_id == erdyes::event_text_for_talk::apply_dyes)
         {
-            return erdyes::messages.apply_dyes.data();
+            return apply_dyes_msg.data();
         }
         else if (msg_id == erdyes::event_text_for_talk::primary_color)
         {
@@ -122,6 +123,25 @@ static const wchar_t *msg_repository_lookup_entry_detour(from::CS::MsgRepository
 
 void erdyes::setup_messages()
 {
+    spdlog::info("Waiting for messages...");
+    while (!from::CS::MsgRepositoryImp::instance())
+    {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+
+    // Hook MsgRepositoryImp::LookupEntry() to return messages added by the mod
+    modutils::hook(
+        {
+            .aob = "8b da"        // mov ebx, edx
+                   "44 8b ca"     // mov r9d, edx
+                   "33 d2"        // xor edx, edx
+                   "48 8b f9"     // mov rdi, rcx
+                   "44 8d 42 6f", // lea r8d, [rdx+0x6f]
+            .offset = 14,
+            .relative_offsets = {{1, 5}},
+        },
+        msg_repository_lookup_entry_detour, msg_repository_lookup_entry);
+
     // Pick the messages to use based on the player's selected language for the game in Steam
     auto language = get_steam_language();
 
@@ -137,53 +157,44 @@ void erdyes::setup_messages()
         messages = messages_by_lang.at("english");
     }
 
-    // Reverse the order of the images and text for RTL. Elden Ring doesn't support bidirectional
-    // text (I think), so we have to manually change the order to the right direction.
-    if (language == "arabic")
-    {
-        none_deselected_msg =
-            messages.none +
-            L"<IMG SRC='img://MENU_DummyTransparent.dds' WIDTH='32' HEIGHT='1' HSPACE='0'"
-            L" VSPACE='-1'> ";
+    apply_dyes_msg = messages.apply_dyes;
 
-        none_selected_msg =
-            messages.none +
-            L"<IMG SRC='img://MENU_DummyTransparent.dds' WIDTH='12' HEIGHT='1' HSPACE='0' "
-            L"VSPACE='-1'> " +
-            L"<IMG SRC='img://MENU_Lockon_01a.png' WIDTH='20' HEIGHT='20' HSPACE='0' VSPACE='-1'>";
+    // Detect if a right-to-left language is being used, since Elden Ring's poor text shaping
+    // support requires us to change the order of some messages
+    bool is_rtl = language == "arabic";
 
-        back_msg = messages.back +
-                   L" <IMG SRC='img://MENU_DummyTransparent.dds' WIDTH='32' HEIGHT='1' HSPACE='0' "
-                   L"VSPACE='-1'>";
-    }
+    // Detect if the ELDEN RING: Reforged mod is running, since some adjustments to menu text
+    // are needed
+    auto calibrations_ver = std::wstring_view{msg_repository_lookup_entry(
+        from::CS::MsgRepositoryImp::instance(), 0, from::msgbnd::menu_text, 401322)};
+    bool is_reforged = calibrations_ver.find(L"ELDEN RING Reforged") != std::wstring::npos;
+
+    none_deselected_msg = format_option_message(L" " + messages.none, false, is_rtl);
+    none_selected_msg = format_option_message(L" " + messages.none, true, is_rtl);
+
+    const std::wstring back_spacer = L"<IMG SRC='img://MENU_DummyTransparent.dds' WIDTH='32' "
+                                     L"HEIGHT='2' HSPACE='0' VSPACE='-1'>";
+    if (is_rtl)
+        back_msg = messages.back + L" " + back_spacer;
     else
+        back_msg = back_spacer + L" " + messages.back;
+
+    // Add an icon to the "Apply dyes" option to align with the other menu items in Reforged
+    if (is_reforged)
     {
-        none_deselected_msg =
-            L"<IMG SRC='img://MENU_DummyTransparent.dds' WIDTH='32' HEIGHT='1' HSPACE='0'"
-            L" VSPACE='-1'> " +
-            messages.none;
-
-        none_selected_msg =
-            L"<IMG SRC='img://MENU_Lockon_01a.png' WIDTH='20' HEIGHT='20' HSPACE='0' VSPACE='-1'>"
-            L"<IMG SRC='img://MENU_DummyTransparent.dds' WIDTH='12' HEIGHT='1' HSPACE='0' "
-            L"VSPACE='-1'> " +
-            messages.none;
-
-        back_msg = L"<IMG SRC='img://MENU_DummyTransparent.dds' WIDTH='32' HEIGHT='1' HSPACE='0' "
-                   L"VSPACE='-1'> " +
-                   messages.back;
+        const std::wstring reforged_icon =
+            L"<IMG SRC='img://SB_ERR_Body_Hues.png' WIDTH='32' HEIGHT='32' VSPACE='-16'>";
+        if (is_rtl)
+            apply_dyes_msg = apply_dyes_msg + L" " + reforged_icon;
+        else
+            apply_dyes_msg = reforged_icon + L" " + apply_dyes_msg;
     }
+}
 
-    // Hook MsgRepositoryImp::LookupEntry() to return messages added by the mod
-    modutils::hook(
-        {
-            .aob = "8b da"        // mov ebx, edx
-                   "44 8b ca"     // mov r9d, edx
-                   "33 d2"        // xor edx, edx
-                   "48 8b f9"     // mov rdi, rcx
-                   "44 8d 42 6f", // lea r8d, [rdx+0x6f]
-            .offset = 14,
-            .relative_offsets = {{1, 5}},
-        },
-        msg_repository_lookup_entry_detour, msg_repository_lookup_entry);
+std::wstring erdyes::format_option_message(std::wstring const &label, bool selected, bool rtl)
+{
+    auto img_src = selected ? L"MENU_Lockon_01a.png" : L"MENU_DummyTransparent.dds";
+    auto icon = std::wstring{L"<IMG SRC='img://"} + img_src +
+                L"' WIDTH='20' HEIGHT='20' HSPACE='0' VSPACE='-1'>";
+    return rtl ? (label + icon) : (icon + label);
 }

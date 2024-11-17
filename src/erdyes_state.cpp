@@ -132,18 +132,6 @@ void erdyes::state_init()
 }
 
 /**
- * Format one of the color or intensity menu options. This contains an image (either blank for
- * padding or a dot to show it's selected), a colored block character, and the option name.
- */
-static constexpr std::wstring format_option_message(std::wstring const &color_block,
-                                                    std::wstring const &name, bool selected)
-{
-    auto img_src = selected ? L"MENU_Lockon_01a.png" : L"MENU_DummyTransparent.dds";
-    return std::wstring{L"<IMG SRC='img://"} + img_src +
-           L"' WIDTH='20' HEIGHT='20' HSPACE='0' VSPACE='-1'>" + color_block + name;
-};
-
-/**
  * Render a string of text that displays as a colored rectangle.
  */
 static constexpr std::wstring format_color_block(const std::wstring &hex_code)
@@ -180,15 +168,17 @@ void erdyes::add_color_option(const std::wstring &name, const std::wstring &hex_
                               float g, float b)
 {
     auto color_block = format_color_block(hex_code);
-    colors.emplace_back(color_block, format_option_message(color_block, name, true),
-                        format_option_message(color_block, name, false), r, g, b);
+    auto label = color_block + name;
+    colors.emplace_back(color_block, erdyes::format_option_message(label, true),
+                        erdyes::format_option_message(label, false), r, g, b);
 }
 
 void erdyes::add_intensity_option(const std::wstring &name, const std::wstring &hex_code, float i)
 {
     auto color_block = format_color_block(hex_code);
-    intensities.emplace_back(color_block, format_option_message(color_block, name, true),
-                             format_option_message(color_block, name, false), i);
+    auto label = color_block + name;
+    intensities.emplace_back(color_block, erdyes::format_option_message(label, true),
+                             erdyes::format_option_message(label, false), i);
 }
 
 void erdyes::update_dye_target_messages()

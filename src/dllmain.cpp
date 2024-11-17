@@ -27,10 +27,10 @@ static void setup_mod()
     spdlog::info("Sleeping for {}ms...", erdyes::config::initialize_delay);
     std::this_thread::sleep_for(std::chrono::milliseconds(erdyes::config::initialize_delay));
 
-    erdyes::state_init();
-
     spdlog::info("Hooking messages...");
     erdyes::setup_messages();
+
+    erdyes::state_init();
 
     spdlog::info("Hooking talkscripts...");
     erdyes::setup_talkscript();
