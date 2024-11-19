@@ -59,6 +59,7 @@ static void enable_debug_logging(std::shared_ptr<spdlog::logger> logger)
     freopen_s(&stream, "CONOUT$", "w", stderr);
     freopen_s(&stream, "CONIN$", "r", stdin);
     logger->sinks().push_back(std::make_shared<spdlog::sinks::stdout_color_sink_st>());
+    logger->flush_on(spdlog::level::info);
     logger->set_level(spdlog::level::trace);
 }
 

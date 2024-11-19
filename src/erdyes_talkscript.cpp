@@ -22,7 +22,7 @@
 #include <elden-x/utils/modutils.hpp>
 
 // Stores the current color option being edited
-static erdyes::dye_target_type talkscript_dye_target;
+static erdyes::dye_target_type talkscript_dye_target{erdyes::dye_target_type::none};
 
 // Talkscript for selecting a color or none
 static auto color_menu = talkscript_menu{};
@@ -117,7 +117,6 @@ static void initialize_talkscript_states()
     intensity_menu.set_opts(intensity_opts);
 }
 
-static from::ezstate::machine *patched_machine;
 static auto patched_events = std::array<from::ezstate::event, 100>{};
 static auto patched_transitions = std::array<from::ezstate::transition *, 100>{};
 
@@ -131,7 +130,26 @@ static bool is_sort_chest_transition(const from::ezstate::transition *transition
            target_state->entry_events[0].command == from::talk_command::open_repository;
 }
 
-static bool patch_states(from::ezstate::state_group *state_group)
+static bool is_grace_state_group(from::ezstate::state_group *state_group)
+{
+    for (auto &state : state_group->states)
+    {
+        for (auto &event : state.entry_events)
+        {
+            if (event.command == from::talk_command::add_talk_list_data)
+            {
+                auto message_id = get_ezstate_int_value(event.args[1]);
+                if (message_id == erdyes::event_text_for_talk::sort_chest)
+                {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
+static bool patch_state_group(from::ezstate::state_group *state_group)
 {
     from::ezstate::state *add_menu_state = nullptr;
     from::ezstate::state *menu_transition_state = nullptr;
@@ -205,7 +223,6 @@ static bool patch_states(from::ezstate::state_group *state_group)
  */
 static void handle_dye_states(from::ezstate::state *state)
 {
-
     // Update the messages for the color picker dialog to show a dot next to the selected color
     auto update_color_messages = []() {
         int selected_index = erdyes::get_selected_option(talkscript_dye_target);
@@ -307,7 +324,12 @@ static void handle_dye_states(from::ezstate::state *state)
             }
         }
 
-        talkscript_dye_target = erdyes::dye_target_type::none;
+        // For any other state not added by the mod, reset the dye target to none
+        if (state != &color_menu.state && state != &color_menu.branch_state &&
+            state != &intensity_menu.state && state != &intensity_menu.branch_state)
+        {
+            talkscript_dye_target = erdyes::dye_target_type::none;
+        }
     }
 }
 
@@ -319,24 +341,17 @@ static void (*ezstate_enter_state)(from::ezstate::state *, from::ezstate::machin
 static void ezstate_enter_state_detour(from::ezstate::state *state, from::ezstate::machine *machine,
                                        void *unk)
 {
-    if (state == machine->state_group->initial_state)
+    if (is_grace_state_group(machine->state_group))
     {
-        if (patch_states(machine->state_group))
+        if (state == machine->state_group->initial_state && patch_state_group(machine->state_group))
         {
-            patched_machine = machine;
-
             dye_target_menu.opts.back().transition.target_state =
                 machine->state_group->initial_state;
 
             color_selected_return_transition.target_state = &dye_target_menu.state;
             intensity_selected_return_transition.target_state = &dye_target_menu.state;
         }
-    }
 
-    if (machine == patched_machine && state != &color_menu.state &&
-        state != &color_menu.branch_state && state != &intensity_menu.state &&
-        state != &intensity_menu.branch_state)
-    {
         handle_dye_states(state);
     }
 
