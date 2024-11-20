@@ -121,6 +121,26 @@ static auto patched_events = std::array<from::ezstate::event, 100>{};
 static auto patched_transitions = std::array<from::ezstate::transition *, 100>{};
 
 /**
+ * Return true if the given EzState event is the site of grace "Sort chest" menu option
+ */
+static bool is_sort_chest_event(from::ezstate::event &event)
+{
+    if (event.command == from::talk_command::add_talk_list_data)
+    {
+        auto message_id = get_ezstate_int_value(event.args[1]);
+        return message_id == erdyes::event_text_for_talk::sort_chest;
+    }
+
+    if (event.command == from::talk_command::add_talk_list_data_if)
+    {
+        auto message_id = get_ezstate_int_value(event.args[2]);
+        return message_id == erdyes::event_text_for_talk::sort_chest;
+    }
+
+    return false;
+}
+
+/**
  * Return true if the given EzState transition goes to a state that opens the storage chest
  */
 static bool is_sort_chest_transition(const from::ezstate::transition *transition)
@@ -136,13 +156,9 @@ static bool is_grace_state_group(from::ezstate::state_group *state_group)
     {
         for (auto &event : state.entry_events)
         {
-            if (event.command == from::talk_command::add_talk_list_data)
+            if (is_sort_chest_event(event))
             {
-                auto message_id = get_ezstate_int_value(event.args[1]);
-                if (message_id == erdyes::event_text_for_talk::sort_chest)
-                {
-                    return true;
-                }
+                return true;
             }
         }
     }
@@ -164,15 +180,15 @@ static bool patch_state_group(from::ezstate::state_group *state_group)
         for (int i = 0; i < state.entry_events.size(); i++)
         {
             auto &event = state.entry_events[i];
-            if (event.command == from::talk_command::add_talk_list_data)
+            if (is_sort_chest_event(event))
+            {
+                add_menu_state = &state;
+                event_index = i;
+            }
+            else if (event.command == from::talk_command::add_talk_list_data)
             {
                 auto message_id = get_ezstate_int_value(event.args[1]);
-                if (message_id == erdyes::event_text_for_talk::sort_chest)
-                {
-                    add_menu_state = &state;
-                    event_index = i;
-                }
-                else if (message_id == erdyes::event_text_for_talk::apply_dyes)
+                if (message_id == erdyes::event_text_for_talk::apply_dyes)
                 {
                     spdlog::debug("Not patching state group x{}, already patched",
                                   0x7fffffff - state_group->id);
