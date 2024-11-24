@@ -7,8 +7,8 @@
  * generated from the .ini config.
  */
 #include "erdyes_talkscript.hpp"
+#include "erdyes_local_player.hpp"
 #include "erdyes_messages.hpp"
-#include "erdyes_state.hpp"
 #include "talkscript_utils.hpp"
 
 #include <array>
@@ -241,7 +241,7 @@ static void handle_dye_states(from::ezstate::state *state)
 {
     // Update the messages for the color picker dialog to show a dot next to the selected color
     auto update_color_messages = []() {
-        int selected_index = erdyes::get_selected_option(talkscript_dye_target);
+        int selected_index = erdyes::local_player::get_selected_index(talkscript_dye_target);
         for (int i = 0; i < color_menu.opts.size() - 1; i++)
         {
             int message_id;
@@ -265,7 +265,7 @@ static void handle_dye_states(from::ezstate::state *state)
 
     // Update the messages for the intensity picker dialog to show a dot next to the selected color
     auto update_intensity_messages = []() {
-        int selected_index = erdyes::get_selected_option(talkscript_dye_target);
+        int selected_index = erdyes::local_player::get_selected_index(talkscript_dye_target);
         for (int i = 0; i < intensity_menu.opts.size() - 1; i++)
         {
             int message_id = (selected_index == i
@@ -279,7 +279,7 @@ static void handle_dye_states(from::ezstate::state *state)
     if (state == &dye_target_menu.state)
     {
         talkscript_dye_target = erdyes::dye_target_type::none;
-        erdyes::update_dye_target_messages();
+        erdyes::local_player::update_dye_target_messages();
     }
     // When one of the six options is chosen, store the selection and update the list of options
     // to include a dot next to the currently selected one
@@ -316,7 +316,7 @@ static void handle_dye_states(from::ezstate::state *state)
     // Unset the current color if "none" is selected in the color picker
     else if (state == &color_none_selected_state)
     {
-        erdyes::set_selected_option(talkscript_dye_target, -1);
+        erdyes::local_player::set_selected_index(talkscript_dye_target, -1);
         talkscript_dye_target = erdyes::dye_target_type::none;
     }
     else
@@ -327,7 +327,7 @@ static void handle_dye_states(from::ezstate::state *state)
         {
             if (state == &color_selected_states[i])
             {
-                erdyes::set_selected_option(talkscript_dye_target, i);
+                erdyes::local_player::set_selected_index(talkscript_dye_target, i);
                 break;
             }
         }
@@ -335,7 +335,7 @@ static void handle_dye_states(from::ezstate::state *state)
         {
             if (state == &intensity_selected_states[i])
             {
-                erdyes::set_selected_option(talkscript_dye_target, i);
+                erdyes::local_player::set_selected_index(talkscript_dye_target, i);
                 break;
             }
         }

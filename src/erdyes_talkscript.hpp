@@ -1,6 +1,6 @@
 #pragma once
 
-#include "erdyes_state.hpp"
+#include "erdyes_local_player.hpp"
 
 namespace erdyes
 {

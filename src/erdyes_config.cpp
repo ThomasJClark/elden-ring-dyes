@@ -1,7 +1,7 @@
 #define MINI_CASE_SENSITIVE
 
 #include "erdyes_config.hpp"
-#include "erdyes_state.hpp"
+#include "erdyes_local_player.hpp"
 
 #include <codecvt>
 #include <locale>
@@ -97,9 +97,9 @@ void erdyes::load_config(const std::filesystem::path &ini_path)
             int elements[3];
             if (parse_hex_code(hex_code, elements))
             {
-                erdyes::add_color_option(converter.from_bytes(name), converter.from_bytes(hex_code),
-                                         elements[0] / 255.0f, elements[1] / 255.0f,
-                                         elements[2] / 255.0f);
+                erdyes::local_player::add_color_option(
+                    converter.from_bytes(name), converter.from_bytes(hex_code),
+                    elements[0] / 255.0f, elements[1] / 255.0f, elements[2] / 255.0f);
 
                 spdlog::info("Added color definition \"{} = {}\"", name, hex_code);
             }

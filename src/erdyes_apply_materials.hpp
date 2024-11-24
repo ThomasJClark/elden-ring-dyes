@@ -3,6 +3,6 @@
 namespace erdyes
 {
 
-void apply_colors_init();
+void apply_materials_init();
 
 }

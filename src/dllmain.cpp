@@ -10,10 +10,10 @@
 #include <elden-x/params/params.hpp>
 #include <elden-x/utils/modutils.hpp>
 
-#include "erdyes_colors.hpp"
+#include "erdyes_apply_materials.hpp"
 #include "erdyes_config.hpp"
+#include "erdyes_local_player.hpp"
 #include "erdyes_messages.hpp"
-#include "erdyes_state.hpp"
 #include "erdyes_talkscript.hpp"
 
 static std::thread mod_thread;
@@ -30,12 +30,12 @@ static void setup_mod()
     spdlog::info("Hooking messages...");
     erdyes::setup_messages();
 
-    erdyes::state_init();
+    erdyes::local_player::init();
 
     spdlog::info("Hooking talkscripts...");
     erdyes::setup_talkscript();
 
-    erdyes::apply_colors_init();
+    erdyes::apply_materials_init();
 
     modutils::enable_hooks();
     spdlog::info("Initialized mod");

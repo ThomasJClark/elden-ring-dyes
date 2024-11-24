@@ -1,11 +1,12 @@
 /**
- * erdyes_player_state.hpp
+ * erdyes_local_player.cpp
  *
  * Keeps track of the current dye selections for the player, saving and loading them and exposing
  * the results to the talkscript, messages, and color application systems.
  */
-#include "erdyes_state.hpp"
+#include "erdyes_local_player.hpp"
 #include "erdyes_messages.hpp"
+#include "erdyes_talkscript.hpp"
 
 #include <elden-x/chr/world_chr_man.hpp>
 #include <elden-x/paramdef/EQUIP_PARAM_GOODS_ST.hpp>
@@ -19,9 +20,10 @@ static constexpr int default_color_index = -1;
 static constexpr int default_intensity_index = 3;
 
 // A hidden good that's saved to the player's inventory in order to persist dye settings
-static auto dummy_good =
-    from::paramdef::EQUIP_PARAM_GOODS_ST{.maxNum = 1, .goodsType = goods_type_hidden};
-
+static auto dummy_good = from::paramdef::EQUIP_PARAM_GOODS_ST{
+    .maxNum = 1,
+    .goodsType = goods_type_hidden,
+};
 static constexpr int dummy_good_primary_color_start = 6700000;
 static constexpr int dummy_good_secondary_color_start = 6710000;
 static constexpr int dummy_good_tertiary_color_start = 6720000;
@@ -33,6 +35,18 @@ std::array<std::wstring, 6> erdyes::dye_target_messages;
 
 std::vector<erdyes::color> erdyes::colors;
 std::vector<erdyes::intensity> erdyes::intensities;
+
+static erdyes::state::dye_values local_player_dyes;
+
+static bool is_valid_color_index(int index)
+{
+    return index >= 0 && index < erdyes::colors.size();
+}
+
+static bool is_valid_intensity_index(int index)
+{
+    return index >= 0 && index < erdyes::intensities.size();
+}
 
 static bool is_color(erdyes::dye_target_type dye_target)
 {
@@ -83,7 +97,7 @@ static void get_equip_param_goods_detour(get_equip_param_goods_result *result, i
     get_equip_param_goods(result, id);
 }
 
-void erdyes::state_init()
+void erdyes::local_player::init()
 {
     add_remove_item = modutils::scan<add_remove_item_fn>({
         .aob = "8b 99 90 01 00 00" // mov ebx, [rcx + 0x190]
@@ -119,16 +133,45 @@ void erdyes::state_init()
 
     // Add 10 hardcoded intensity options. The color options are added by erdyes_config.cpp based
     // on the .ini file
-    erdyes::add_intensity_option(L"1", L"#1e1e1e", 0.125f);
-    erdyes::add_intensity_option(L"2", L"#3d3d3d", 0.25f);
-    erdyes::add_intensity_option(L"3", L"#4d4d4d", 0.5f);
-    erdyes::add_intensity_option(L"4", L"#656565", 1.0f);
-    erdyes::add_intensity_option(L"5", L"#7f7f7f", 2.0f);
-    erdyes::add_intensity_option(L"6", L"#9a9a9a", 4.0f);
-    erdyes::add_intensity_option(L"7", L"#b2b2b2", 8.0f);
-    erdyes::add_intensity_option(L"8", L"#c9c9c9", 16.0f);
-    erdyes::add_intensity_option(L"9", L"#e1e1e1", 32.0f);
-    erdyes::add_intensity_option(L"10", L"#ffffff", 64.0f);
+    erdyes::local_player::add_intensity_option(L"1", L"#1e1e1e", 0.125f);
+    erdyes::local_player::add_intensity_option(L"2", L"#3d3d3d", 0.25f);
+    erdyes::local_player::add_intensity_option(L"3", L"#4d4d4d", 0.5f);
+    erdyes::local_player::add_intensity_option(L"4", L"#656565", 1.0f);
+    erdyes::local_player::add_intensity_option(L"5", L"#7f7f7f", 2.0f);
+    erdyes::local_player::add_intensity_option(L"6", L"#9a9a9a", 4.0f);
+    erdyes::local_player::add_intensity_option(L"7", L"#b2b2b2", 8.0f);
+    erdyes::local_player::add_intensity_option(L"8", L"#c9c9c9", 16.0f);
+    erdyes::local_player::add_intensity_option(L"9", L"#e1e1e1", 32.0f);
+    erdyes::local_player::add_intensity_option(L"10", L"#ffffff", 64.0f);
+}
+
+void erdyes::local_player::update()
+{
+    auto update_dye_value = [](erdyes::state::dye_value &dye_value,
+                               erdyes::dye_target_type color_target,
+                               erdyes::dye_target_type intensity_target) {
+        auto color_index = get_selected_index(color_target);
+        if (is_valid_color_index(color_index))
+        {
+            auto intensity_index = get_selected_index(intensity_target);
+            dye_value.is_applied = true;
+            dye_value.red = erdyes::colors[color_index].red;
+            dye_value.green = erdyes::colors[color_index].green;
+            dye_value.blue = erdyes::colors[color_index].blue;
+            dye_value.intensity = erdyes::intensities[intensity_index].intensity;
+        }
+        else
+        {
+            dye_value.is_applied = false;
+        }
+    };
+
+    update_dye_value(local_player_dyes.primary, erdyes::dye_target_type::primary_color,
+                     erdyes::dye_target_type::primary_intensity);
+    update_dye_value(local_player_dyes.secondary, erdyes::dye_target_type::secondary_color,
+                     erdyes::dye_target_type::secondary_intensity);
+    update_dye_value(local_player_dyes.tertiary, erdyes::dye_target_type::tertiary_color,
+                     erdyes::dye_target_type::tertiary_intensity);
 }
 
 /**
@@ -164,8 +207,8 @@ static std::pair<int, size_t> get_dye_target_goods_range(erdyes::dye_target_type
     return {-1, 0};
 };
 
-void erdyes::add_color_option(const std::wstring &name, const std::wstring &hex_code, float r,
-                              float g, float b)
+void erdyes::local_player::add_color_option(const std::wstring &name, const std::wstring &hex_code,
+                                            float r, float g, float b)
 {
     auto color_block = format_color_block(hex_code);
     auto label = color_block + name;
@@ -173,7 +216,8 @@ void erdyes::add_color_option(const std::wstring &name, const std::wstring &hex_
                         erdyes::format_option_message(label, false), r, g, b);
 }
 
-void erdyes::add_intensity_option(const std::wstring &name, const std::wstring &hex_code, float i)
+void erdyes::local_player::add_intensity_option(const std::wstring &name,
+                                                const std::wstring &hex_code, float i)
 {
     auto color_block = format_color_block(hex_code);
     auto label = color_block + name;
@@ -181,15 +225,20 @@ void erdyes::add_intensity_option(const std::wstring &name, const std::wstring &
                              erdyes::format_option_message(label, false), i);
 }
 
-void erdyes::update_dye_target_messages()
+const erdyes::state::dye_values &erdyes::local_player::get_selected_dyes()
+{
+    return local_player_dyes;
+}
+
+void erdyes::local_player::update_dye_target_messages()
 {
     auto set_messages = [](dye_target_type color_target, dye_target_type intensity_target,
                            const std::wstring &color_msg, const std::wstring &intensity_msg) {
         auto &color_message = dye_target_messages[static_cast<int>(color_target)];
         auto &intensity_message = dye_target_messages[static_cast<int>(intensity_target)];
 
-        auto color_index = get_selected_option(color_target);
-        auto intensity_index = get_selected_option(intensity_target);
+        auto color_index = get_selected_index(color_target);
+        auto intensity_index = get_selected_index(intensity_target);
         if (color_index != -1)
         {
             color_message = colors[color_index].color_block + color_msg;
@@ -214,8 +263,22 @@ void erdyes::update_dye_target_messages()
                  messages.tertiary_color, messages.tertiary_intensity);
 }
 
-int erdyes::get_selected_option(erdyes::dye_target_type dye_target)
+int erdyes::local_player::get_selected_index(erdyes::dye_target_type dye_target)
 {
+    auto is_dye_target_color = is_color(dye_target);
+
+    // Return the focused talkscript menu option if the dye target is currently being edited
+    if (erdyes::get_talkscript_dye_target() == dye_target)
+    {
+        auto talkscript_focused_entry = erdyes::get_talkscript_focused_entry();
+
+        // The minus 1 accounts for the "none" option in the color menu
+        if (is_dye_target_color && is_valid_color_index(talkscript_focused_entry - 1))
+            return talkscript_focused_entry - 1;
+        else if (!is_dye_target_color && is_valid_intensity_index(talkscript_focused_entry))
+            return talkscript_focused_entry;
+    }
+
     auto world_chr_man = from::CS::WorldChrManImp::instance();
     if (!world_chr_man || !world_chr_man->main_player)
     {
@@ -223,7 +286,7 @@ int erdyes::get_selected_option(erdyes::dye_target_type dye_target)
     }
 
     auto equip_inventory_data =
-        &world_chr_man->main_player->player_game_data->equip_game_data.equip_inventory_data;
+        &world_chr_man->main_player->game_data->equip_game_data.equip_inventory_data;
 
     auto [base_goods_id, count] = get_dye_target_goods_range(dye_target);
     if (base_goods_id == -1)
@@ -240,10 +303,10 @@ int erdyes::get_selected_option(erdyes::dye_target_type dye_target)
             return i;
         }
     }
-    return is_color(dye_target) ? default_color_index : default_intensity_index;
+    return is_dye_target_color ? default_color_index : default_intensity_index;
 }
 
-void erdyes::set_selected_option(erdyes::dye_target_type dye_target, int index)
+void erdyes::local_player::set_selected_index(erdyes::dye_target_type dye_target, int index)
 {
     auto [base_goods_id, count] = get_dye_target_goods_range(dye_target);
     if (base_goods_id == -1)
@@ -258,7 +321,7 @@ void erdyes::set_selected_option(erdyes::dye_target_type dye_target, int index)
     }
 
     auto equip_inventory_data =
-        &world_chr_man->main_player->player_game_data->equip_game_data.equip_inventory_data;
+        &world_chr_man->main_player->game_data->equip_game_data.equip_inventory_data;
 
     // Remove any existing dummy items in the given range to clear out existing dye selections
     for (int i = 0; i < count; i++)
@@ -273,14 +336,12 @@ void erdyes::set_selected_option(erdyes::dye_target_type dye_target, int index)
 
     // If a new selection was chosen, add an item to the player's inventory to store this selection
     if (index != -1)
-    {
         add_remove_item(item_type_goods, base_goods_id + index, 1);
-    }
     // If "none" was chosen for a color, also remove the item for the corresponding intensity
     else if (dye_target == erdyes::dye_target_type::primary_color)
-        set_selected_option(erdyes::dye_target_type::primary_intensity, -1);
+        set_selected_index(erdyes::dye_target_type::primary_intensity, -1);
     else if (dye_target == erdyes::dye_target_type::secondary_color)
-        set_selected_option(erdyes::dye_target_type::secondary_intensity, -1);
+        set_selected_index(erdyes::dye_target_type::secondary_intensity, -1);
     else if (dye_target == erdyes::dye_target_type::tertiary_color)
-        set_selected_option(erdyes::dye_target_type::tertiary_intensity, -1);
+        set_selected_index(erdyes::dye_target_type::tertiary_intensity, -1);
 }

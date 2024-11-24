@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.28.1)
 set(CMAKE_GENERATOR_PLATFORM x64)
 
 project(erdyes
-  VERSION   "1.0.3"
+  VERSION   "1.1.0"
   LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -32,7 +32,7 @@ FetchContent_Declare(steamworks-sdk
 
 FetchContent_Declare(elden-x
   GIT_REPOSITORY        https://github.com/ThomasJClark/elden-x.git
-  GIT_TAG               584a7de9f86f1ee6d7b166142c0fe71620d6ac4b)
+  GIT_TAG               3d2314dfb749280d5c0fdfc1a7dfbf1f073fdbd0)
 
 # Set iterator debug level to 0 for ELDEN RING ABI compatibility
 add_definitions(-D_ITERATOR_DEBUG_LEVEL=0)
@@ -50,11 +50,12 @@ set_target_properties(steamworks-sdk PROPERTIES
         IMPORTED_LOCATION_DEBUG ${steamworks-sdk_SOURCE_DIR}/lib/steam/steam_api64.lib)
 
 add_library(erdyes SHARED
-  src/erdyes_colors.cpp  
+  src/erdyes_apply_materials.cpp
   src/erdyes_config.cpp
-  src/erdyes_messages.cpp
+  src/erdyes_local_player.cpp
   src/erdyes_messages_by_lang.cpp
-  src/erdyes_state.cpp  
+  src/erdyes_messages.cpp
+  src/erdyes_net_players.cpp
   src/erdyes_talkscript.cpp
   src/dllmain.cpp)
 

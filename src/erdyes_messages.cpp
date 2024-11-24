@@ -5,7 +5,7 @@
  * function to return them.
  */
 #include "erdyes_messages.hpp"
-#include "erdyes_state.hpp"
+#include "erdyes_local_player.hpp"
 
 #include <chrono>
 #include <map>
