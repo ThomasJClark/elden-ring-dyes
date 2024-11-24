@@ -23,17 +23,31 @@ FetchContent_Declare(spdlog
   GIT_REPOSITORY        https://github.com/gabime/spdlog.git
   GIT_TAG               v1.13.0)
 
+set(SWSDK_VERSION "1.59")
+set(SWSDK_RELEASE "x64")
+FetchContent_Declare(steamworks-sdk
+  URL                   https://github.com/julianxhokaxhiu/SteamworksSDKCI/releases/download/${SWSDK_VERSION}/SteamworksSDK-v${SWSDK_VERSION}.0_${SWSDK_RELEASE}.zip
+  CONFIGURE_COMMAND     ""
+  BUILD_COMMAND         "")
+
 FetchContent_Declare(elden-x
   GIT_REPOSITORY        https://github.com/ThomasJClark/elden-x.git
-  GIT_TAG               706ec9aff8f8fb0b4f2f650cad8d68ede4167d89)
+  GIT_TAG               584a7de9f86f1ee6d7b166142c0fe71620d6ac4b)
 
 # Set iterator debug level to 0 for ELDEN RING ABI compatibility
 add_definitions(-D_ITERATOR_DEBUG_LEVEL=0)
 
-FetchContent_MakeAvailable(mini spdlog elden-x)
+FetchContent_MakeAvailable(mini spdlog steamworks-sdk elden-x)
 
 add_library(mini INTERFACE)
 target_include_directories(mini INTERFACE ${mini_SOURCE_DIR}/src)
+
+add_library(steamworks-sdk STATIC IMPORTED GLOBAL)
+target_include_directories(steamworks-sdk INTERFACE ${steamworks-sdk_SOURCE_DIR}/include)
+set_property(TARGET steamworks-sdk APPEND PROPERTY IMPORTED_CONFIGURATIONS DEBUG)
+set_target_properties(steamworks-sdk PROPERTIES
+        IMPORTED_LINK_INTERFACE_LANGUAGES_DEBUG CXX
+        IMPORTED_LOCATION_DEBUG ${steamworks-sdk_SOURCE_DIR}/lib/steam/steam_api64.lib)
 
 add_library(erdyes SHARED
   src/erdyes_colors.cpp  
@@ -54,4 +68,4 @@ add_custom_command(TARGET erdyes POST_BUILD
   ${CMAKE_SOURCE_DIR}/erdyes.ini
   COMMAND_EXPAND_LISTS)
 
-target_link_libraries(erdyes mini spdlog elden-x)
+target_link_libraries(erdyes mini spdlog steamworks-sdk elden-x)

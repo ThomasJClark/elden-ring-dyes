@@ -12,9 +12,9 @@
 #include <thread>
 
 #include <elden-x/messages.hpp>
-#include <elden-x/utils/localization.hpp>
 #include <elden-x/utils/modutils.hpp>
 #include <spdlog/spdlog.h>
+#include <steam/isteamapps.h>
 
 erdyes::messages_type erdyes::messages;
 
@@ -143,7 +143,7 @@ void erdyes::setup_messages()
         msg_repository_lookup_entry_detour, msg_repository_lookup_entry);
 
     // Pick the messages to use based on the player's selected language for the game in Steam
-    auto language = get_steam_language();
+    auto language = std::string{SteamApps()->GetCurrentGameLanguage()};
 
     auto localized_messages = messages_by_lang.find(language);
     if (localized_messages != messages_by_lang.end())
