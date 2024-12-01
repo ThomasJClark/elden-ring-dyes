@@ -240,8 +240,8 @@ static bool patch_state_group(from::ezstate::state_group *state_group)
 static void handle_dye_states(from::ezstate::state *state)
 {
     // Update the messages for the color picker dialog to show a dot next to the selected color
-    auto update_color_messages = []() {
-        int selected_index = erdyes::local_player::get_selected_index(talkscript_dye_target);
+    auto update_color_messages = [](erdyes::dye_target_type dye_target) {
+        int selected_index = erdyes::local_player::get_selected_index(dye_target);
         for (int i = 0; i < color_menu.opts.size() - 1; i++)
         {
             int message_id;
@@ -261,11 +261,12 @@ static void handle_dye_states(from::ezstate::state *state)
 
             color_menu.opts[i].message = make_int_expression(message_id);
         }
+        talkscript_dye_target = dye_target;
     };
 
     // Update the messages for the intensity picker dialog to show a dot next to the selected color
-    auto update_intensity_messages = []() {
-        int selected_index = erdyes::local_player::get_selected_index(talkscript_dye_target);
+    auto update_intensity_messages = [](erdyes::dye_target_type dye_target) {
+        int selected_index = erdyes::local_player::get_selected_index(dye_target);
         for (int i = 0; i < intensity_menu.opts.size() - 1; i++)
         {
             int message_id = (selected_index == i
@@ -274,6 +275,7 @@ static void handle_dye_states(from::ezstate::state *state)
                              i;
             intensity_menu.opts[i].message = make_int_expression(message_id);
         }
+        talkscript_dye_target = dye_target;
     };
 
     if (state == &dye_target_menu.state)
@@ -285,33 +287,27 @@ static void handle_dye_states(from::ezstate::state *state)
     // to include a dot next to the currently selected one
     else if (state == &primary_color_state)
     {
-        talkscript_dye_target = erdyes::dye_target_type::primary_color;
-        update_color_messages();
+        update_color_messages(erdyes::dye_target_type::primary_color);
     }
     else if (state == &secondary_color_state)
     {
-        talkscript_dye_target = erdyes::dye_target_type::secondary_color;
-        update_color_messages();
+        update_color_messages(erdyes::dye_target_type::secondary_color);
     }
     else if (state == &tertiary_color_state)
     {
-        talkscript_dye_target = erdyes::dye_target_type::tertiary_color;
-        update_color_messages();
+        update_color_messages(erdyes::dye_target_type::tertiary_color);
     }
     else if (state == &primary_intensity_state)
     {
-        talkscript_dye_target = erdyes::dye_target_type::primary_intensity;
-        update_intensity_messages();
+        update_intensity_messages(erdyes::dye_target_type::primary_intensity);
     }
     else if (state == &secondary_intensity_state)
     {
-        talkscript_dye_target = erdyes::dye_target_type::secondary_intensity;
-        update_intensity_messages();
+        update_intensity_messages(erdyes::dye_target_type::secondary_intensity);
     }
     else if (state == &tertiary_intensity_state)
     {
-        talkscript_dye_target = erdyes::dye_target_type::tertiary_intensity;
-        update_intensity_messages();
+        update_intensity_messages(erdyes::dye_target_type::tertiary_intensity);
     }
     // Unset the current color if "none" is selected in the color picker
     else if (state == &color_none_selected_state)
