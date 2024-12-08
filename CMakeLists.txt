@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.28.1)
 set(CMAKE_GENERATOR_PLATFORM x64)
 
 project(erdyes
-  VERSION   "1.1.1"
+  VERSION   "1.1.2"
   LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -32,7 +32,7 @@ FetchContent_Declare(steamworks-sdk
 
 FetchContent_Declare(elden-x
   GIT_REPOSITORY        https://github.com/ThomasJClark/elden-x.git
-  GIT_TAG               3d2314dfb749280d5c0fdfc1a7dfbf1f073fdbd0)
+  GIT_TAG               f32caed61f1a90e237572c83659f0c02f6499072)
 
 # Set iterator debug level to 0 for ELDEN RING ABI compatibility
 add_definitions(-D_ITERATOR_DEBUG_LEVEL=0)

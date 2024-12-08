@@ -131,7 +131,8 @@ static bool is_sort_chest_event(from::ezstate::event &event)
         return message_id == erdyes::event_text_for_talk::sort_chest;
     }
 
-    if (event.command == from::talk_command::add_talk_list_data_if)
+    if (event.command == from::talk_command::add_talk_list_data_if ||
+        event.command == from::talk_command::add_talk_list_data_alt)
     {
         auto message_id = get_ezstate_int_value(event.args[2]);
         return message_id == erdyes::event_text_for_talk::sort_chest;

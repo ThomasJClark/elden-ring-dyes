@@ -27,7 +27,7 @@ static constexpr int_expression make_int_expression(int value)
 /**
  * Parse an ESD expression containing only a 1 or 4 byte integer
  */
-static int get_ezstate_int_value(const from::ezstate::expression &arg)
+static int get_ezstate_int_value(const from::ezstate::expression arg)
 {
     // Single byte (plus final 0xa1) - used to store integers from -64 to 63
     if (arg.size() == 2)

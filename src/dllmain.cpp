@@ -22,7 +22,7 @@ static void setup_mod()
 {
     modutils::initialize();
 
-    from::params::initialize();
+    from::CS::SoloParamRepository::wait_for_params();
 
     spdlog::info("Sleeping for {}ms...", erdyes::config::initialize_delay);
     std::this_thread::sleep_for(std::chrono::milliseconds(erdyes::config::initialize_delay));
