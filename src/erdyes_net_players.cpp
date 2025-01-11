@@ -21,7 +21,7 @@ static constexpr int steam_networking_channel_dyes = 100067;
 
 void erdyes::net_players::send_messages(const erdyes::state::dye_values &local_player_dyes)
 {
-    auto session_manager = from::CS::CSSessionManagerImp::instance();
+    auto session_manager = er::CS::CSSessionManagerImp::instance();
 
     auto local_player_steam_id = SteamUser()->GetSteamID().ConvertToUint64();
 
@@ -73,7 +73,7 @@ void erdyes::net_players::receive_messages()
     }
 
     // Remove entries for players who aren't connected anymore
-    auto player_entries = from::CS::CSSessionManagerImp::instance()->player_entries();
+    auto player_entries = er::CS::CSSessionManagerImp::instance()->player_entries();
     for (auto it = net_colors_map.begin(); it != net_colors_map.end();)
     {
         if (std::none_of(player_entries.begin(), player_entries.end(),

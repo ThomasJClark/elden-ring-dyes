@@ -22,17 +22,17 @@ static constexpr int player_copy_sentinel = 0;
 static float cumulative_time = 0.0f;
 static constexpr float net_update_interval = 0.1f;
 
-static void apply_colors(from::CS::ChrIns *, const erdyes::state::dye_values &);
+static void apply_colors(er::CS::ChrIns *, const erdyes::state::dye_values &);
 
 // CS::PlayerIns::Update(float delta_time)
-static void (*cs_player_update)(from::CS::PlayerIns *, float);
-static void cs_player_update_detour(from::CS::PlayerIns *_this, float delta_time)
+static void (*cs_player_update)(er::CS::PlayerIns *, float);
+static void cs_player_update_detour(er::CS::PlayerIns *_this, float delta_time)
 {
     cs_player_update(_this, delta_time);
 
     auto &chr_asm = _this->game_data->equip_game_data.chr_asm;
 
-    if (_this == from::CS::WorldChrManImp::instance()->main_player)
+    if (_this == er::CS::WorldChrManImp::instance()->main_player)
     {
         // Check the loaded save slot for the latest dye selections
         erdyes::local_player::update();
@@ -75,10 +75,10 @@ static void cs_player_update_detour(from::CS::PlayerIns *_this, float delta_time
 /**
  * Updates all material parameters for the given character based on the given selected colors
  */
-static void apply_colors(from::CS::ChrIns *chr, const erdyes::state::dye_values &values)
+static void apply_colors(er::CS::ChrIns *chr, const erdyes::state::dye_values &values)
 {
     auto apply_color = [&](const std::wstring &name, const erdyes::state::dye_value &value) {
-        auto new_modifier = from::CS::CSChrModelParamModifierModule::modifier{
+        auto new_modifier = er::CS::CSChrModelParamModifierModule::modifier{
             .name = name.data(),
             .value = {.material_id = 1,
                       .value1 = value.red,
@@ -124,15 +124,14 @@ static void apply_colors(from::CS::ChrIns *chr, const erdyes::state::dye_values 
     }
 }
 
-static void (*copy_player_character_data)(from::CS::PlayerIns *, from::CS::PlayerIns *);
-static void copy_player_character_data_detour(from::CS::PlayerIns *target,
-                                              from::CS::PlayerIns *source)
+static void (*copy_player_character_data)(er::CS::PlayerIns *, er::CS::PlayerIns *);
+static void copy_player_character_data_detour(er::CS::PlayerIns *target, er::CS::PlayerIns *source)
 {
     copy_player_character_data(target, source);
 
     // When a player character is copied onto an NPC (Mimic Tear), store a number in the ChrAsm to
     // make sure dyes also apply to the mimic.
-    auto world_chr_man = from::CS::WorldChrManImp::instance();
+    auto world_chr_man = er::CS::WorldChrManImp::instance();
     if (world_chr_man && source == world_chr_man->main_player)
     {
         auto &chr_asm = target->game_data->equip_game_data.chr_asm;

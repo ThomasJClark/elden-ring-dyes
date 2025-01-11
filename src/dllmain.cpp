@@ -8,6 +8,7 @@
 #include <windows.h>
 
 #include <elden-x/params/params.hpp>
+#include <elden-x/singletons.hpp>
 #include <elden-x/utils/modutils.hpp>
 
 #include "erdyes_apply_materials.hpp"
@@ -21,8 +22,10 @@ static std::thread mod_thread;
 static void setup_mod()
 {
     modutils::initialize();
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    er::FD4::find_singletons();
 
-    from::CS::SoloParamRepository::wait_for_params();
+    er::CS::SoloParamRepository::wait_for_params();
 
     spdlog::info("Sleeping for {}ms...", erdyes::config::initialize_delay);
     std::this_thread::sleep_for(std::chrono::milliseconds(erdyes::config::initialize_delay));

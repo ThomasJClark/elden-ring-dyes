@@ -32,7 +32,7 @@ FetchContent_Declare(steamworks-sdk
 
 FetchContent_Declare(elden-x
   GIT_REPOSITORY        https://github.com/ThomasJClark/elden-x.git
-  GIT_TAG               f32caed61f1a90e237572c83659f0c02f6499072)
+  GIT_TAG               483210c7da876289adc6758fbf4c6778de5937bf)
 
 # Set iterator debug level to 0 for ELDEN RING ABI compatibility
 add_definitions(-D_ITERATOR_DEBUG_LEVEL=0)
@@ -69,4 +69,4 @@ add_custom_command(TARGET erdyes POST_BUILD
   ${CMAKE_SOURCE_DIR}/erdyes.ini
   COMMAND_EXPAND_LISTS)
 
-target_link_libraries(erdyes mini spdlog steamworks-sdk elden-x)
+target_link_libraries(erdyes PRIVATE mini spdlog steamworks-sdk elden-x)
