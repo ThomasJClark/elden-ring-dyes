@@ -20,7 +20,7 @@ static constexpr int default_color_index = -1;
 static constexpr int default_intensity_index = 3;
 
 // A hidden good that's saved to the player's inventory in order to persist dye settings
-static auto dummy_good = from::paramdef::EQUIP_PARAM_GOODS_ST{
+static auto dummy_good = er::paramdef::equip_param_goods_st{
     .maxNum = 1,
     .goodsType = goods_type_hidden,
 };
@@ -60,14 +60,14 @@ typedef void add_remove_item_fn(unsigned long long item_type, unsigned int item_
 static add_remove_item_fn *add_remove_item;
 
 // CS::EquipInventoryData::GetInventoryId(int itemId)
-typedef int get_inventory_id_fn(from::CS::EquipInventoryData *, int *item_id);
+typedef int get_inventory_id_fn(er::CS::EquipInventoryData *, int *item_id);
 static get_inventory_id_fn *get_inventory_id;
 
 struct get_equip_param_goods_result
 {
     int id;
     int unk;
-    from::paramdef::EQUIP_PARAM_GOODS_ST *row;
+    er::paramdef::equip_param_goods_st *row;
 };
 
 static void (*get_equip_param_goods)(get_equip_param_goods_result *result, int id);
@@ -279,7 +279,7 @@ int erdyes::local_player::get_selected_index(erdyes::dye_target_type dye_target)
             return talkscript_focused_entry;
     }
 
-    auto world_chr_man = from::CS::WorldChrManImp::instance();
+    auto world_chr_man = er::CS::WorldChrManImp::instance();
     if (!world_chr_man || !world_chr_man->main_player)
     {
         return -1;
@@ -314,7 +314,7 @@ void erdyes::local_player::set_selected_index(erdyes::dye_target_type dye_target
         return;
     }
 
-    auto world_chr_man = from::CS::WorldChrManImp::instance();
+    auto world_chr_man = er::CS::WorldChrManImp::instance();
     if (!world_chr_man || !world_chr_man->main_player)
     {
         return;

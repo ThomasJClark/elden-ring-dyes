@@ -23,8 +23,8 @@ static std::wstring none_deselected_msg;
 static std::wstring none_selected_msg;
 static std::wstring back_msg;
 
-static const wchar_t *(*msg_repository_lookup_entry)(from::CS::MsgRepositoryImp *, unsigned int,
-                                                     from::msgbnd, int);
+static const wchar_t *(*msg_repository_lookup_entry)(er::CS::MsgRepositoryImp *, unsigned int,
+                                                     er::msgbnd, int);
 
 /**
  * Hook for MsgRepositoryImp::LookupEntry()
@@ -32,11 +32,11 @@ static const wchar_t *(*msg_repository_lookup_entry)(from::CS::MsgRepositoryImp 
  * Return menu text for the talkscript options and color names added by the mod, or fall back to
  * the default vanilla messages.
  */
-static const wchar_t *msg_repository_lookup_entry_detour(from::CS::MsgRepositoryImp *msg_repository,
-                                                         unsigned int unknown, from::msgbnd bnd_id,
+static const wchar_t *msg_repository_lookup_entry_detour(er::CS::MsgRepositoryImp *msg_repository,
+                                                         unsigned int unknown, er::msgbnd bnd_id,
                                                          int msg_id)
 {
-    if (bnd_id == from::msgbnd::event_text_for_talk &&
+    if (bnd_id == er::msgbnd::event_text_for_talk &&
         msg_id >= erdyes::event_text_for_talk::mod_message_start &&
         msg_id < erdyes::event_text_for_talk::mod_message_end)
     {
@@ -124,7 +124,7 @@ static const wchar_t *msg_repository_lookup_entry_detour(from::CS::MsgRepository
 void erdyes::setup_messages()
 {
     spdlog::info("Waiting for messages...");
-    while (!from::CS::MsgRepositoryImp::instance())
+    while (!er::CS::MsgRepositoryImp::instance())
     {
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
@@ -166,7 +166,7 @@ void erdyes::setup_messages()
     // Detect if the ELDEN RING: Reforged mod is running, since some adjustments to menu text
     // are needed
     auto calibrations_ver = std::wstring_view{msg_repository_lookup_entry(
-        from::CS::MsgRepositoryImp::instance(), 0, from::msgbnd::menu_text, 401322)};
+        er::CS::MsgRepositoryImp::instance(), 0, er::msgbnd::menu_text, 401322)};
     bool is_reforged = calibrations_ver.find(L"ELDEN RING Reforged") != std::wstring::npos;
 
     none_deselected_msg = format_option_message(L" " + messages.none, false, is_rtl);

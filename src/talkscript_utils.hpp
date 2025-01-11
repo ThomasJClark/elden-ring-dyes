@@ -27,7 +27,7 @@ static constexpr int_expression make_int_expression(int value)
 /**
  * Parse an ESD expression containing only a 1 or 4 byte integer
  */
-static int get_ezstate_int_value(const from::ezstate::expression arg)
+static int get_ezstate_int_value(const er::ezstate::expression arg)
 {
     // Single byte (plus final 0xa1) - used to store integers from -64 to 63
     if (arg.size() == 2)
@@ -73,7 +73,7 @@ static auto placeholder_expression = make_int_expression(-1);
  */
 static auto generic_dialog_shop_message = make_int_expression(0);
 static auto show_generic_dialog_shop_message_args = std::array{
-    from::ezstate::expression(generic_dialog_shop_message),
+    er::ezstate::expression(generic_dialog_shop_message),
 };
 
 /**
@@ -117,8 +117,8 @@ class talkscript_menu_option
     std::array<unsigned char, 6> index;
     std::array<unsigned char, 6> message;
     std::array<unsigned char, 9> condition;
-    std::array<from::ezstate::expression, 3> args;
-    from::ezstate::transition transition;
+    std::array<er::ezstate::expression, 3> args;
+    er::ezstate::transition transition;
     bool is_default;
 
     talkscript_menu_option() : talkscript_menu_option(-1, -1, nullptr)
@@ -128,20 +128,20 @@ class talkscript_menu_option
     talkscript_menu_option(const talkscript_menu_option &other)
         : index(other.index), message(other.message), condition(other.condition),
           args{this->index, this->message, placeholder_expression},
-          transition(other.transition.target_state,
-                     other.is_default ? from::ezstate::expression{true_expression}
-                                      : from::ezstate::expression{this->condition}),
+          transition(other.transition.target_state, other.is_default
+                                                        ? er::ezstate::expression{true_expression}
+                                                        : er::ezstate::expression{this->condition}),
           is_default(other.is_default)
     {
     }
 
-    talkscript_menu_option(int index, int message_id, from::ezstate::state *target_state,
+    talkscript_menu_option(int index, int message_id, er::ezstate::state *target_state,
                            bool is_default = false)
         : index(make_int_expression(index)), message(make_int_expression(message_id)),
           condition(make_talk_list_result_expression(index)),
           args{this->index, this->message, placeholder_expression},
-          transition(target_state, is_default ? from::ezstate::expression{true_expression}
-                                              : from::ezstate::expression{this->condition}),
+          transition(target_state, is_default ? er::ezstate::expression{true_expression}
+                                              : er::ezstate::expression{this->condition}),
           is_default(is_default)
     {
     }
@@ -153,15 +153,15 @@ class talkscript_menu_option
 class talkscript_menu
 {
   public:
-    from::ezstate::state state;
+    er::ezstate::state state;
     std::vector<talkscript_menu_option> opts;
-    std::unique_ptr<from::ezstate::event[]> events;
-    from::ezstate::transition transition{&branch_state,
-                                         from::ezstate::expression{talk_menu_closed_expression}};
-    std::array<from::ezstate::transition *, 1> transitions{&transition};
+    std::unique_ptr<er::ezstate::event[]> events;
+    er::ezstate::transition transition{&branch_state,
+                                       er::ezstate::expression{talk_menu_closed_expression}};
+    std::array<er::ezstate::transition *, 1> transitions{&transition};
 
-    from::ezstate::state branch_state;
-    std::unique_ptr<from::ezstate::transition *[]> branch_transitions;
+    er::ezstate::state branch_state;
+    std::unique_ptr<er::ezstate::transition *[]> branch_transitions;
 
     talkscript_menu()
     {
@@ -185,24 +185,24 @@ class talkscript_menu
         size_t branch_transition_count = 0;
         size_t event_count = 0;
 
-        branch_transitions = std::make_unique<from::ezstate::transition *[]>(opts.size());
+        branch_transitions = std::make_unique<er::ezstate::transition *[]>(opts.size());
 
-        events = std::make_unique<from::ezstate::event[]>(opts.size() + 3);
-        events[event_count++] = {from::talk_command::close_shop_message};
-        events[event_count++] = {from::talk_command::clear_talk_list_data};
+        events = std::make_unique<er::ezstate::event[]>(opts.size() + 3);
+        events[event_count++] = {er::talk_command::close_shop_message};
+        events[event_count++] = {er::talk_command::clear_talk_list_data};
 
         for (auto &opt : opts)
         {
-            events[event_count++] = {from::talk_command::add_talk_list_data, opt.args};
+            events[event_count++] = {er::talk_command::add_talk_list_data, opt.args};
             branch_transitions[branch_transition_count++] = &opt.transition;
         }
 
-        events[event_count++] = {from::talk_command::show_shop_message,
+        events[event_count++] = {er::talk_command::show_shop_message,
                                  show_generic_dialog_shop_message_args};
 
-        state.entry_events = from::ezstate::events{events.get(), opts.size() + 3};
+        state.entry_events = er::ezstate::events{events.get(), opts.size() + 3};
         state.transitions = transitions;
         branch_state.transitions =
-            from::ezstate::transitions{branch_transitions.get(), branch_transition_count};
+            er::ezstate::transitions{branch_transitions.get(), branch_transition_count};
     }
 };
