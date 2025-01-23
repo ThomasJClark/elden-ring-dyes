@@ -4,6 +4,7 @@
  * Applies colors to the player characters based on the current local and networked selections
  */
 #include "erdyes_apply_materials.hpp"
+#include "erdyes_config.hpp"
 #include "erdyes_local_player.hpp"
 #include "erdyes_net_players.hpp"
 
@@ -11,6 +12,9 @@
 #include <elden-x/utils/modutils.hpp>
 #include <spdlog/spdlog.h>
 #include <string>
+
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 
 static const std::wstring albedo1_material_ex_name = L"[Albedo]_1_[Tint]";
 static const std::wstring albedo2_material_ex_name = L"[Albedo]_2_[Tint]";
@@ -22,12 +26,31 @@ static constexpr int player_copy_sentinel = 0;
 static float cumulative_time = 0.0f;
 static constexpr float net_update_interval = 0.1f;
 
+/**
+ * Returns true if the local player's dyes shouldn't be displayed on other player's screens
+ * and vice versa
+ */
+static bool is_client_side_only()
+{
+    auto result = erdyes::config::client_side_only;
+
+    // F8 temporarily inverts this setting so you can peek at other players' actual armor
+    if (GetAsyncKeyState(VK_F8) & 0x8000)
+    {
+        return !result;
+    }
+
+    return result;
+}
+
 static void apply_colors(er::CS::ChrIns *, const erdyes::state::dye_values &);
 
 // CS::PlayerIns::Update(float delta_time)
 static void (*cs_player_update)(er::CS::PlayerIns *, float);
 static void cs_player_update_detour(er::CS::PlayerIns *_this, float delta_time)
 {
+    static auto empty_dyes = erdyes::state::dye_values{};
+
     cs_player_update(_this, delta_time);
 
     auto &chr_asm = _this->game_data->equip_game_data.chr_asm;
@@ -47,7 +70,8 @@ static void cs_player_update_detour(er::CS::PlayerIns *_this, float delta_time)
         if (cumulative_time > net_update_interval)
         {
             cumulative_time -= net_update_interval;
-            erdyes::net_players::send_messages(local_player_dyes);
+            erdyes::net_players::send_messages(is_client_side_only() ? empty_dyes
+                                                                     : local_player_dyes);
         }
     }
     // Apply the main player logic to any mimic tears as well
@@ -66,7 +90,9 @@ static void cs_player_update_detour(er::CS::PlayerIns *_this, float delta_time)
 
             // Apply the dye selections we've received from this player
             auto net_player_dyes =
-                erdyes::net_players::get_selected_dyes(network_session->steam_id);
+                is_client_side_only()
+                    ? empty_dyes
+                    : erdyes::net_players::get_selected_dyes(network_session->steam_id);
             apply_colors(_this, net_player_dyes);
         }
     }

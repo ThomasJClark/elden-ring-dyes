@@ -20,5 +20,7 @@ extern bool debug;
 // compatibility issues with other DLL mods.
 extern unsigned int initialize_delay;
 
+// Disables networking, for PVP reasons.
+extern bool client_side_only;
 }
 };

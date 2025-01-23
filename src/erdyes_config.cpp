@@ -16,6 +16,8 @@ bool erdyes::config::debug = false;
 
 unsigned int erdyes::config::initialize_delay = 5000;
 
+bool erdyes::config::client_side_only = false;
+
 /**
  * Parse an HTML-style hexadecimal color code, returning true if successful
  */
@@ -76,13 +78,14 @@ void erdyes::load_config(const std::filesystem::path &ini_path)
         auto &erdyes_config = ini["erdyes"];
 
         if (erdyes_config.has("debug") && erdyes_config["debug"] != "false")
-        {
             erdyes::config::debug = true;
-        }
 
         if (erdyes_config.has("initialize_delay"))
             erdyes::config::initialize_delay =
                 std::stoi(erdyes_config["initialize_delay"], nullptr, 10);
+
+        if (erdyes_config.has("client_side_only"))
+            erdyes::config::client_side_only = erdyes_config["client_side_only"] != "false";
     }
 
     if (ini.has("colors"))
