@@ -1,7 +1,6 @@
 #pragma once
 
-namespace erdyes
-{
+namespace erdyes {
 
 void apply_materials_init();
 

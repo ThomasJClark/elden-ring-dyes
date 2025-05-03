@@ -8,11 +8,9 @@
 #include <string>
 #include <vector>
 
-namespace erdyes
-{
+namespace erdyes {
 
-struct color
-{
+struct color {
     std::wstring color_block;
     std::wstring selected_message;
     std::wstring deselected_message;
@@ -21,16 +19,14 @@ struct color
     float blue;
 };
 
-struct intensity
-{
+struct intensity {
     std::wstring color_block;
     std::wstring selected_message;
     std::wstring deselected_message;
     float intensity;
 };
 
-enum class dye_target_type : int
-{
+enum class dye_target_type : int {
     none = -1,
     primary_color,
     secondary_color,
@@ -46,8 +42,7 @@ extern std::array<std::wstring, 6> dye_target_messages;
 extern std::vector<color> colors;
 extern std::vector<intensity> intensities;
 
-namespace local_player
-{
+namespace local_player {
 
 void init();
 
@@ -59,8 +54,8 @@ void update();
 /**
  * Add an option that can be chosen as the primary, secondary, or tertiary dye color
  */
-void add_color_option(const std::wstring &name, const std::wstring &hex_code, float r, float g,
-                      float b);
+void add_color_option(
+    const std::wstring &name, const std::wstring &hex_code, float r, float g, float b);
 
 /**
  * Add an option that can be chosen as the intensity of the primary, secondary, or tertiary color

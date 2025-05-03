@@ -3,13 +3,11 @@
 #include <map>
 #include <string>
 
-namespace erdyes
-{
+namespace erdyes {
 
 void setup_messages();
 
-struct messages_type
-{
+struct messages_type {
     std::wstring apply_dyes;
     std::wstring primary_color;
     std::wstring secondary_color;
@@ -30,8 +28,7 @@ extern std::map<std::string, messages_type> messages_by_lang;
 std::wstring format_option_message(std::wstring const &label, bool selected, bool rtl = false);
 
 // Message IDs in EventTextForTalk.fmg
-namespace event_text_for_talk
-{
+namespace event_text_for_talk {
 static constexpr int cancel = 15000372;
 static constexpr int sort_chest = 15000395;
 static constexpr int convergence_training_grounds_settings = 910001101;

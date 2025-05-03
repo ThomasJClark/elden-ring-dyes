@@ -2,16 +2,14 @@
 
 #include <filesystem>
 
-namespace erdyes
-{
+namespace erdyes {
 
 /**
  * Load user preferences from an .ini file
  */
 void load_config(const std::filesystem::path &ini_path);
 
-namespace config
-{
+namespace config {
 
 // Enables console output
 extern bool debug;
