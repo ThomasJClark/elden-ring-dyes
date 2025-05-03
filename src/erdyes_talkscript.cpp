@@ -121,21 +121,21 @@ static auto patched_events = std::array<er::ezstate::event, 100>{};
 static auto patched_transitions = std::array<er::ezstate::transition *, 100>{};
 
 /**
- * Return true if the given EzState event is the site of grace "Sort chest" menu option
+ * Return true if the given EzState event is the given menu option
  */
-static bool is_sort_chest_event(er::ezstate::event &event)
+static bool is_talk_list_data_event(er::ezstate::event &event, int expected_message_id)
 {
     if (event.command == er::talk_command::add_talk_list_data)
     {
         auto message_id = get_ezstate_int_value(event.args[1]);
-        return message_id == erdyes::event_text_for_talk::sort_chest;
+        return message_id == expected_message_id;
     }
 
     if (event.command == er::talk_command::add_talk_list_data_if ||
         event.command == er::talk_command::add_talk_list_data_alt)
     {
         auto message_id = get_ezstate_int_value(event.args[2]);
-        return message_id == erdyes::event_text_for_talk::sort_chest;
+        return message_id == expected_message_id;
     }
 
     return false;
@@ -157,7 +157,14 @@ static bool is_grace_state_group(er::ezstate::state_group *state_group)
     {
         for (auto &event : state.entry_events)
         {
-            if (is_sort_chest_event(event))
+            // Exclude the training grounds statue in The Convergence, which has a "Sort Chest"
+            // menu option but shouldn't include the dye menu.
+            if (is_talk_list_data_event(
+                    event, erdyes::event_text_for_talk::convergence_training_grounds_settings))
+            {
+                return false;
+            }
+            if (is_talk_list_data_event(event, erdyes::event_text_for_talk::sort_chest))
             {
                 return true;
             }
@@ -181,7 +188,7 @@ static bool patch_state_group(er::ezstate::state_group *state_group)
         for (int i = 0; i < state.entry_events.size(); i++)
         {
             auto &event = state.entry_events[i];
-            if (is_sort_chest_event(event))
+            if (is_talk_list_data_event(event, erdyes::event_text_for_talk::sort_chest))
             {
                 add_menu_state = &state;
                 event_index = i;

@@ -34,6 +34,7 @@ namespace event_text_for_talk
 {
 static constexpr int cancel = 15000372;
 static constexpr int sort_chest = 15000395;
+static constexpr int convergence_training_grounds_settings = 910001101;
 
 static constexpr int mod_message_start = 670000000;
 static constexpr int mod_message_end = 670100000;
