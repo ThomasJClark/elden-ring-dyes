@@ -8,18 +8,20 @@
 #include "erdyes_local_player.hpp"
 #include "erdyes_net_players.hpp"
 
+#include <spdlog/spdlog.h>
 #include <elden-x/chr/world_chr_man.hpp>
 #include <elden-x/utils/modutils.hpp>
-#include <spdlog/spdlog.h>
 #include <string>
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
-static const std::wstring albedo1_material_ex_name = L"[Albedo]_1_[Tint]";
-static const std::wstring albedo2_material_ex_name = L"[Albedo]_2_[Tint]";
-static const std::wstring albedo3_material_ex_name = L"[Albedo]_3_[Tint]";
-static const std::wstring albedo4_material_ex_name = L"[Albedo]_4_[Tint]";
+using namespace std;
+
+static const wstring albedo1_material_ex_name = L"[Albedo]_1_[Tint]";
+static const wstring albedo2_material_ex_name = L"[Albedo]_2_[Tint]";
+static const wstring albedo3_material_ex_name = L"[Albedo]_3_[Tint]";
+static const wstring albedo4_material_ex_name = L"[Albedo]_4_[Tint]";
 
 static constexpr int player_copy_sentinel = 0;
 
@@ -30,13 +32,11 @@ static constexpr float net_update_interval = 0.1f;
  * Returns true if the local player's dyes shouldn't be displayed on other player's screens
  * and vice versa
  */
-static bool is_client_side_only()
-{
+static bool is_client_side_only() {
     auto result = erdyes::config::client_side_only;
 
     // F8 temporarily inverts this setting so you can peek at other players' actual armor
-    if (GetAsyncKeyState(VK_F8) & 0x8000)
-    {
+    if (GetAsyncKeyState(VK_F8) & 0x8000) {
         return !result;
     }
 
@@ -47,16 +47,14 @@ static void apply_colors(er::CS::ChrIns *, const erdyes::state::dye_values &);
 
 // CS::PlayerIns::Update(float delta_time)
 static void (*cs_player_update)(er::CS::PlayerIns *, float);
-static void cs_player_update_detour(er::CS::PlayerIns *_this, float delta_time)
-{
+static void cs_player_update_detour(er::CS::PlayerIns *_this, float delta_time) {
     static auto empty_dyes = erdyes::state::dye_values{};
 
     cs_player_update(_this, delta_time);
 
     auto &chr_asm = _this->game_data->equip_game_data.chr_asm;
 
-    if (_this == er::CS::WorldChrManImp::instance()->main_player)
-    {
+    if (_this == er::CS::WorldChrManImp::instance()->main_player) {
         // Check the loaded save slot for the latest dye selections
         erdyes::local_player::update();
 
@@ -67,24 +65,19 @@ static void cs_player_update_detour(er::CS::PlayerIns *_this, float delta_time)
         // Also periodically send the dye selections to other connected players, so their games can
         // show the dyes if they have the mod installed
         cumulative_time += delta_time;
-        if (cumulative_time > net_update_interval)
-        {
+        if (cumulative_time > net_update_interval) {
             cumulative_time -= net_update_interval;
             erdyes::net_players::send_messages(is_client_side_only() ? empty_dyes
                                                                      : local_player_dyes);
         }
     }
     // Apply the main player logic to any mimic tears as well
-    else if (chr_asm.gear_param_ids.unused4 == player_copy_sentinel)
-    {
+    else if (chr_asm.gear_param_ids.unused4 == player_copy_sentinel) {
         auto local_player_dyes = erdyes::local_player::get_selected_dyes();
         apply_colors(_this, local_player_dyes);
-    }
-    else
-    {
+    } else {
         auto network_session = _this->session_holder.network_session;
-        if (network_session)
-        {
+        if (network_session) {
             // Check the network buffer for dye updates from other players
             erdyes::net_players::receive_messages();
 
@@ -101,9 +94,8 @@ static void cs_player_update_detour(er::CS::PlayerIns *_this, float delta_time)
 /**
  * Updates all material parameters for the given character based on the given selected colors
  */
-static void apply_colors(er::CS::ChrIns *chr, const erdyes::state::dye_values &values)
-{
-    auto apply_color = [&](const std::wstring &name, const erdyes::state::dye_value &value) {
+static void apply_colors(er::CS::ChrIns *chr, const erdyes::state::dye_values &values) {
+    auto apply_color = [&](const wstring &name, const erdyes::state::dye_value &value) {
         auto new_modifier = er::CS::CSChrModelParamModifierModule::modifier{
             .name = name.data(),
             .value = {.material_id = 1,
@@ -119,10 +111,8 @@ static void apply_colors(er::CS::ChrIns *chr, const erdyes::state::dye_values &v
         // Update the modifier if it's already applied to the character, otherwise insert it
         // into the vector. Note that we write over the entire modifier and not just the RGB
         // fields because the game zeros out this memory each frame.
-        for (auto &modifier : modifiers)
-        {
-            if (modifier.name == name)
-            {
+        for (auto &modifier : modifiers) {
+            if (modifier.name == name) {
                 modifier = new_modifier;
                 return;
             }
@@ -131,18 +121,15 @@ static void apply_colors(er::CS::ChrIns *chr, const erdyes::state::dye_values &v
         modifiers.push_back(new_modifier);
     };
 
-    if (values.primary.is_applied)
-    {
+    if (values.primary.is_applied) {
         // Albedo 1 typically controls the largest portion of armor and weapon models
         apply_color(albedo1_material_ex_name, values.primary);
     }
-    if (values.secondary.is_applied)
-    {
+    if (values.secondary.is_applied) {
         // Albedo 3 typically controls secondary materials and accents
         apply_color(albedo3_material_ex_name, values.secondary);
     }
-    if (values.tertiary.is_applied)
-    {
+    if (values.tertiary.is_applied) {
         // Albedo 2 and 4 are both used less commonly for small details, so group them both in as
         // the "tertiary" color
         apply_color(albedo2_material_ex_name, values.tertiary);
@@ -151,39 +138,37 @@ static void apply_colors(er::CS::ChrIns *chr, const erdyes::state::dye_values &v
 }
 
 static void (*copy_player_character_data)(er::CS::PlayerIns *, er::CS::PlayerIns *);
-static void copy_player_character_data_detour(er::CS::PlayerIns *target, er::CS::PlayerIns *source)
-{
+static void copy_player_character_data_detour(er::CS::PlayerIns *target,
+                                              er::CS::PlayerIns *source) {
     copy_player_character_data(target, source);
 
     // When a player character is copied onto an NPC (Mimic Tear), store a number in the ChrAsm to
     // make sure dyes also apply to the mimic.
     auto world_chr_man = er::CS::WorldChrManImp::instance();
-    if (world_chr_man && source == world_chr_man->main_player)
-    {
+    if (world_chr_man && source == world_chr_man->main_player) {
         auto &chr_asm = target->game_data->equip_game_data.chr_asm;
         chr_asm.gear_param_ids.unused4 = player_copy_sentinel;
     }
 }
 
-void erdyes::apply_materials_init()
-{
+void erdyes::apply_materials_init() {
     modutils::hook(
         {
-            .aob = "84 c0"                          // test al, al
-                   "74 09"                          // je 11
-                   "c6 87 ?? ?? ?? ?? 01"           // mov byte ptr [rdi + ????], 1
-                   "eb 0a"                          // jmp 21
-                   "c7 87 ?? ?? ?? ?? 00 00 00 00", // mov dword ptr [rdi + ????], 0
+            .aob = "84 c0"                           // test al, al
+                   "74 09"                           // je 11
+                   "c6 87 ?? ?? ?? ?? 01"            // mov byte ptr [rdi + ????], 1
+                   "eb 0a"                           // jmp 21
+                   "c7 87 ?? ?? ?? ?? 00 00 00 00",  // mov dword ptr [rdi + ????], 0
             .offset = -203,
         },
         cs_player_update_detour, cs_player_update);
 
     modutils::hook(
         {
-            .aob = "c7 44 24 30 00 00 00 00" // mov [rsp + 0x30], 0x0
-                   "48 8d 54 24 28"          // lea rdx, [rsp + 0x28]
-                   "48 8b 8b 80 05 00 00"    // mov rcx, [rbx + 0x580]
-                   "e8 ?? ?? ?? ??",         // call PlayerGameData::PopulatePcInfoBuffer
+            .aob = "c7 44 24 30 00 00 00 00"  // mov [rsp + 0x30], 0x0
+                   "48 8d 54 24 28"           // lea rdx, [rsp + 0x28]
+                   "48 8b 8b 80 05 00 00"     // mov rcx, [rbx + 0x580]
+                   "e8 ?? ?? ?? ??",          // call PlayerGameData::PopulatePcInfoBuffer
             .offset = -216,
         },
         copy_player_character_data_detour, copy_player_character_data);

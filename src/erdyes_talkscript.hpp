@@ -2,8 +2,7 @@
 
 #include "erdyes_local_player.hpp"
 
-namespace erdyes
-{
+namespace erdyes {
 
 void setup_talkscript();
 

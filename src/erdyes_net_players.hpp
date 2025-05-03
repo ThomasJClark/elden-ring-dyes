@@ -2,10 +2,8 @@
 
 #include "erdyes_dye_values.hpp"
 
-namespace erdyes
-{
-namespace net_players
-{
+namespace erdyes {
+namespace net_players {
 
 // Send messages to connected players containing this player's dye state
 void send_messages(const erdyes::state::dye_values &local_player_dyes);
