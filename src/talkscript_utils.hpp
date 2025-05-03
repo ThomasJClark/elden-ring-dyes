@@ -81,32 +81,28 @@ static auto show_generic_dialog_shop_message_args = std::array{
  */
 static auto true_expression = std::array<unsigned char, 2>{0x41, 0xa1};
 
+// clang-format off
 /**
  * Common ESD expression for the generic talk menu closing
  */
-static auto talk_menu_closed_expression =
-    std::array<unsigned char, 40>{// start?
-                                  (unsigned char)0x7b,
-                                  // CheckSpecificPersonMenuIsOpen(1, 0)
-                                  0x82, 0x01, 0x00, 0x00, 0x00, 0x82, 0x00, 0x00, 0x00, 0x00, 0x86,
-                                  // 1
-                                  0x82, 0x01, 0x00, 0x00, 0x00,
-                                  // ==
-                                  0x95,
-                                  // CheckSpecificPersonGenericDialogIsOpen(0)
-                                  0x7a, 0x82, 0x00, 0x00, 0x00, 0x00, 0x85,
-                                  // 0
-                                  0x82, 0x00, 0x00, 0x00, 0x00,
-                                  // ==
-                                  0x95,
-                                  // &&
-                                  0x98,
-                                  // 0
-                                  0x82, 0x00, 0x00, 0x00, 0x00,
-                                  // ==
-                                  0x95,
-                                  // end
-                                  0xa1};
+static auto talk_menu_closed_expression = std::array<unsigned char, 40>{
+    0x7b,                         // CheckSpecificPersonMenuIsOpen
+    0x82, 0x01, 0x00, 0x00, 0x00, // 1
+    0x82, 0x00, 0x00, 0x00, 0x00, // 0
+    0x86,                         // <call with 2 args>
+    0x82, 0x01, 0x00, 0x00, 0x00, // 1
+    0x95,                         // ==
+    0x7a,                         // CheckSpecificPersonGenericDialogIsOpen
+    0x82, 0x00, 0x00, 0x00, 0x00, // 0
+    0x85,                         // <call with 1 arg>
+    0x82, 0x00, 0x00, 0x00, 0x00, // 0
+    0x95,                         // ==
+    0x98,                         // &&
+    0x82, 0x00, 0x00, 0x00, 0x00, // 0
+    0x95,                         // ==
+    0xa1,                         // <end> 
+};
+// clang-format on
 
 /**
  * Helper that holds commonly used structs for a talk menu list item
