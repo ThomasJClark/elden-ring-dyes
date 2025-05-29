@@ -9,6 +9,7 @@
 #include <spdlog/spdlog.h>
 #include <steam/isteamnetworkingmessages.h>
 #include <steam/isteamuser.h>
+
 #include <elden-x/session.hpp>
 
 #include <algorithm>
@@ -34,7 +35,7 @@ void erdyes::net_players::send_messages(const erdyes::state::dye_values &local_p
         }
 
         SteamNetworkingIdentity id;
-        id.SetSteamID64(entry.steam_id);
+        id.SetSteamID(entry.steam_id);
 
         auto result = SteamNetworkingMessages()->SendMessageToUser(
             id, &local_player_dyes, sizeof(local_player_dyes), k_nSteamNetworkingSend_Reliable,
