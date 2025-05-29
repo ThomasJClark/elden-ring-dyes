@@ -7,7 +7,7 @@
 #include <memory>
 #include <thread>
 
-#include <elden-x/params/params.hpp>
+#include <elden-x/params.hpp>
 #include <elden-x/singletons.hpp>
 #include <elden-x/utils/modutils.hpp>
 
@@ -23,7 +23,6 @@ static thread mod_thread;
 
 static void setup_mod() {
     modutils::initialize();
-    this_thread::sleep_for(chrono::seconds(1));
     er::FD4::find_singletons();
 
     er::CS::SoloParamRepository::wait_for_params();
